@@ -473,8 +473,9 @@ const cache_key* getMD5Digest(const unsigned char* prefix, StoreEntry* e) {
 	int replyBodySize = httpReplyBodySize(e->mem_obj->method, e->mem_obj->reply);
 	debug(20, 1) ("getMD5Digest: replyBodySize: %d\n",replyBodySize);
 
+	SQUID_MD5Init(&M);
 	SQUID_MD5Update(&M, (unsigned char *) prefix, 4096); //origin is unsigned char
-	//SQUID_MD5Update(&M, &replyBodySize, sizeof(replyBodySize));
+	SQUID_MD5Update(&M, &replyBodySize, sizeof(replyBodySize));
 
 	SQUID_MD5Final(digest, &M);
 	debug(20, 1) ("getMD5Digest: digest: %s\n",storeKeyText(digest));

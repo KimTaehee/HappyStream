@@ -1971,6 +1971,7 @@ struct _request_t {
     String x_forwarded_for_iterator;
 #endif				/* FOLLOW_X_FORWARDED_FOR */
     ConnStateData *pinned_connection;	/* If set then this request is tighly tied to the corresponding client side connetion */
+    int hitting; //1 is hitting state, 0 is non-hitting state
 };
 
 struct _cachemgr_passwd {

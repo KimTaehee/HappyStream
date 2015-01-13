@@ -41,6 +41,21 @@ static STIOCB storeSwapOutFileNotify;
 static int storeSwapOutAble(const StoreEntry * e);
 unsigned char* getStoredFilePrefix(StoreEntry* e); //Kim Taehee added
 const cache_key* getMD5Digest(const unsigned char* prefix, StoreEntry* e); //Kim Taehee added
+int isLmtMatch(const char* url) //Kim Taehee added
+
+//Kim Taehee added start //TODO: temporary.
+//array which is saved data digest info.
+const char* dataDigest[4]={
+		"FC0DBEE9D62D90E6EFA3D93DAA1FE6BC",
+		"112C6586FF77B268C15D158AD8EE6011",
+		"C94B94521443943D80C47E79608BA136",
+		"B33F960B63395C5CBA054FCDA2AEDDBE,"
+};
+static int hittingState=0; //1 is hitting, or 0.
+static int hittingOffset=0;
+const char* lmt= "1392948869353355";
+//Kim Taehee added end
+
 
 /* start swapping object to disk */
 static void
@@ -368,6 +383,22 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 			prefix = getStoredFilePrefix(e);
 			keyBasedData = getMD5Digest(prefix, e);
 
+			//TODO:for streaming fwd test
+			if(isLmtMatch(storeUrl(e))){ //if target url and lmt found
+				debug(20, 1) ("storeSwapOutFileClosed: lmt found in url: %s\n",lmt);
+				if(!hittingState) {
+					//is first chunk?
+					if(strcmp(storeKeyText(keyBasedData),dataDigest[0])==0) {
+						debug(20, 1) ("storeSwapOutFileClosed: first chunk found\n");
+						//if right,
+						hittingState = 1;
+						hittingOffset = 1;
+					}
+				} else {
+					//cannot reach
+				}
+			}
+
 			//xfree(prefix); //TODO: xfree prefix string
 			//Kim Taehee added end
 		}
@@ -378,6 +409,13 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 	cbdataUnlock(sio);
 	storeSwapOutMaintainMemObject(e);
 	storeUnlockObject(e);
+}
+
+/**
+ * Kim Taehee added
+ */
+int isLmtMatch(const char* url) {
+	return strstr(url,lmt);
 }
 
 /**

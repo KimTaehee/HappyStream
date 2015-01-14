@@ -77,6 +77,7 @@ extern OBJH storeIOStats;
 extern int hittingState;
 extern int hittingOffset;
 extern const char* dataDigest[4][2];
+extern const int numOfchunks;
 //Kim Taehee added end
 
 /*
@@ -389,12 +390,13 @@ storeGetPublicByRequestMethod(request_t * req, const method_t method)
 		if(e && isLmtMatch(req->urlpath.buf)) {
 			debug(20, 1) ("storeGetPublicByRequestMethod: found chunk!\n");
 			hittingOffset++;
-			if(hittingOffset==4) {
+			if(hittingOffset==numOfchunks) {
 				hittingState = 0;
 				hittingOffset = 0;
 			}
 		} else {
 			debug(20, 1) ("storeGetPublicByRequestMethod: cannot find chunk or not streaming!\n");
+			return storeGet(storeKeyPublicByRequestMethod(req, method));
 		}
 		return e;
 	}

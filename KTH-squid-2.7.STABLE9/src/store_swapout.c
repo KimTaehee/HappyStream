@@ -41,16 +41,18 @@ static STIOCB storeSwapOutFileNotify;
 static int storeSwapOutAble(const StoreEntry * e);
 unsigned char* getStoredFilePrefix(StoreEntry* e); //Kim Taehee added
 const cache_key* getMD5Digest(const unsigned char* prefix, StoreEntry* e); //Kim Taehee added
-int isLmtMatch(const char* url); //Kim Taehee added
+char* isLmtMatch(const char* url); //Kim Taehee added
 
 //Kim Taehee added start //TODO: temporary.
 //array which is saved data digest info.
-const char* dataDigest[4][2]={ //col 0: datadigest, col 1: matched url digest
-		"FC0DBEE9D62D90E6EFA3D93DAA1FE6BC","F28811E75D6B9B225BD1D6999B603D70",
-		"112C6586FF77B268C15D158AD8EE6011","EA81014608BC9366947E45C161FD03BF",
-		"C94B94521443943D80C47E79608BA136","43851DF0E763DCABB6DCD4DBB8FACC40",
-		"B33F960B63395C5CBA054FCDA2AEDDBE","32F712A0B320FE79739D00FF05FD812D",
-};
+const char* dataDigest[6][2]={ //col 0: datadigest, col 1: matched url digest
+		"B81481242F159F7F4A5886881F0E62E6", "3CF71F0C0A52CFC7C0265D007160C03E", // 0 00000203, 0-65535
+		"B9226AEDECC921063143FB9E39F7B792", "5D835A88FAFD400CB9449F1ADFF61DD6", // 0 00000208, 65536-112336
+		"FE9FD7433E4134F7F704CD36CA900566", "CF5E2345203DF60FE3CA3CEA33E91D8D", // 0 0000020B, 112337-238321
+		"9D879BBE42CC7A5F49EA0A1783DD6C04", "24B70CB4717F7354AE3E88930B4BF868", // 0 0000020D, 238322-492590
+		"CC3460D6932414175F923D630322B690", "2BAEDEA2AF2E0C2FB84D7611B298268F", // 0 0000020F, 492591-1036645
+		"38EDBEF884DDAC40D04CF308ADF60E09", "8F7B288F18A3D9B33AD1C91BEEDBE86E" // 0 00000211, 1036646-1619866
+}; //http://www.youtube.com/watch?v=_SIWDfFR5LU
 
 //TODO: this is fake chunks list to test. ([3] <-> [2])
 //const char* dataDigest[4][2]={ //col 0: datadigest, col 1: matched url digest
@@ -62,7 +64,9 @@ const char* dataDigest[4][2]={ //col 0: datadigest, col 1: matched url digest
 
 int hittingState=0; //1 is hitting, or 0.
 int hittingOffset=0;
-const char* lmt= "1392948869353355";
+const int numOfchunks=6;
+const char* lmt="1396722499565907"; //http://www.youtube.com/watch?v=_SIWDfFR5LU
+// TODO: test lmt "1392948869353355"; http://www.youtube.com/watch?v=FUq1D709JWc
 //Kim Taehee added end
 
 
@@ -391,6 +395,7 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 			//Kim Taehee added start
 			prefix = getStoredFilePrefix(e);
 			keyBasedData = getMD5Digest(prefix, e);
+			//debug(20, 1) ("storeSwapOutFileClosed: get body key success\n");
 
 			//TODO:for streaming fwd test
 			if(isLmtMatch(storeUrl(e))){ //if target url and lmt found
@@ -406,6 +411,8 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 				} else {
 					//cannot reach
 				}
+			} else {
+				//debug(20, 1) ("storeSwapOutFileClosed: lmt not matched\n");
 			}
 
 			//xfree(prefix); //TODO: xfree prefix string
@@ -423,9 +430,10 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 /**
  * Kim Taehee added
  */
-int isLmtMatch(const char* url) {
+char* isLmtMatch(const char* url) {
+	char* ptr = strstr(url,lmt);
 	//debug(20, 1) ("isLmtMatch: url: %s\n",url);
-	return strstr(url,lmt);
+	return ptr;
 }
 
 /**

@@ -2240,35 +2240,36 @@ clientCacheHit(void *data, HttpReply * rep)
 	 *   regardless of the store url (so objects which have store urls that match their urls
 	 *   can still be HIT fine.)
 	 */
-	if (r->store_url) {
-		if (mem->store_url == NULL && mem->url == NULL) {
-			debug(33, 1) ("clientCacheHit: request has store_url '%s'; mem has no url or store_url!\n", r->store_url);
-			clientProcessMiss(http);
-			return;
-		}
-		if (mem->store_url && strcmp(r->store_url, mem->store_url) != 0) {
-			debug(33, 1) ("clientCacheHit: request has store_url '%s'; mem object in hit has mis-matched store_url '%s'!\n", r->store_url, mem->store_url);
-			clientProcessMiss(http);
-			return;
-		}
-		if (mem->store_url == NULL && mem->url && strcmp(r->store_url, mem->url) != 0) {
-			debug(33, 1) ("clientCacheHit: request has store_url '%s'; mem object in hit has mis-matched url '%s'!\n", r->store_url, mem->url);
-			clientProcessMiss(http);
-			return;
-		}
-	} else {			/* no store URL in request */
-		if (mem->store_url == NULL && mem->url == NULL) {
-			debug(33, 1) ("clientCacheHit: request has url '%s'; mem has no url or store_url!\n", urlCanonical(r));
-			clientProcessMiss(http);
-			return;
-		}
-		/* We currently don't enforce that memObjects with storeurl's -require- a request with a storeurl */
-		if (strcmp(mem->url, urlCanonical(r)) != 0) {
-			debug(33, 1) ("clientCacheHit: (store url '%s'); URL mismatch '%s' != '%s'?\n", r->store_url, e->mem_obj->url, urlCanonical(r));
-			clientProcessMiss(http);
-			return;
-		}
-	}
+	//Kim Taehee commented
+//	if (r->store_url) {
+//		if (mem->store_url == NULL && mem->url == NULL) {
+//			debug(33, 1) ("clientCacheHit: request has store_url '%s'; mem has no url or store_url!\n", r->store_url);
+//			clientProcessMiss(http);
+//			return;
+//		}
+//		if (mem->store_url && strcmp(r->store_url, mem->store_url) != 0) {
+//			debug(33, 1) ("clientCacheHit: request has store_url '%s'; mem object in hit has mis-matched store_url '%s'!\n", r->store_url, mem->store_url);
+//			clientProcessMiss(http);
+//			return;
+//		}
+//		if (mem->store_url == NULL && mem->url && strcmp(r->store_url, mem->url) != 0) {
+//			debug(33, 1) ("clientCacheHit: request has store_url '%s'; mem object in hit has mis-matched url '%s'!\n", r->store_url, mem->url);
+//			clientProcessMiss(http);
+//			return;
+//		}
+//	} else {			/* no store URL in request */
+//		if (mem->store_url == NULL && mem->url == NULL) {
+//			debug(33, 1) ("clientCacheHit: request has url '%s'; mem has no url or store_url!\n", urlCanonical(r));
+//			clientProcessMiss(http);
+//			return;
+//		}
+//		/* We currently don't enforce that memObjects with storeurl's -require- a request with a storeurl */
+//		if (strcmp(mem->url, urlCanonical(r)) != 0) {
+//			debug(33, 1) ("clientCacheHit: (store url '%s'); URL mismatch '%s' != '%s'?\n", r->store_url, e->mem_obj->url, urlCanonical(r));
+//			clientProcessMiss(http);
+//			return;
+//		}
+//	}
 	if (r->flags.collapsed && EBIT_TEST(e->flags, RELEASE_REQUEST)) {
 		/* collapsed_forwarding, but the joined request is not good
 		 * to be cached..
@@ -2401,7 +2402,7 @@ clientCacheHit(void *data, HttpReply * rep)
 				is_modified = 0;
 		}
 	}
-	stale = refreshCheckHTTPStale(e, r);
+	stale = 0; //refreshCheckHTTPStale(e, r); //TODO: test
 	debug(33, 2) ("clientCacheHit: refreshCheckHTTPStale returned %d\n", stale);
 	if (stale == 0) {
 		debug(33, 2) ("clientCacheHit: HIT\n");

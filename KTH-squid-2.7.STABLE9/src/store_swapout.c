@@ -41,18 +41,27 @@ static STIOCB storeSwapOutFileNotify;
 static int storeSwapOutAble(const StoreEntry * e);
 unsigned char* getStoredFilePrefix(StoreEntry* e); //Kim Taehee added
 const cache_key* getMD5Digest(const unsigned char* prefix, StoreEntry* e); //Kim Taehee added
-int isLmtMatch(const char* url) //Kim Taehee added
+int isLmtMatch(const char* url); //Kim Taehee added
 
 //Kim Taehee added start //TODO: temporary.
 //array which is saved data digest info.
-const char* dataDigest[4]={
-		"FC0DBEE9D62D90E6EFA3D93DAA1FE6BC",
-		"112C6586FF77B268C15D158AD8EE6011",
-		"C94B94521443943D80C47E79608BA136",
-		"B33F960B63395C5CBA054FCDA2AEDDBE,"
+const char* dataDigest[4][2]={ //col 0: datadigest, col 1: matched url digest
+		"FC0DBEE9D62D90E6EFA3D93DAA1FE6BC","F28811E75D6B9B225BD1D6999B603D70",
+		"112C6586FF77B268C15D158AD8EE6011","EA81014608BC9366947E45C161FD03BF",
+		"C94B94521443943D80C47E79608BA136","43851DF0E763DCABB6DCD4DBB8FACC40",
+		"B33F960B63395C5CBA054FCDA2AEDDBE","32F712A0B320FE79739D00FF05FD812D",
 };
-static int hittingState=0; //1 is hitting, or 0.
-static int hittingOffset=0;
+
+//TODO: this is fake chunks list to test. ([3] <-> [2])
+//const char* dataDigest[4][2]={ //col 0: datadigest, col 1: matched url digest
+//		"FC0DBEE9D62D90E6EFA3D93DAA1FE6BC","F28811E75D6B9B225BD1D6999B603D70",
+//		"112C6586FF77B268C15D158AD8EE6011","EA81014608BC9366947E45C161FD03BF",
+//		"C94B94521443943D80C47E79608BA136","32F712A0B320FE79739D00FF05FD812D",
+//		"B33F960B63395C5CBA054FCDA2AEDDBE","43851DF0E763DCABB6DCD4DBB8FACC40",
+//};
+
+int hittingState=0; //1 is hitting, or 0.
+int hittingOffset=0;
 const char* lmt= "1392948869353355";
 //Kim Taehee added end
 
@@ -388,7 +397,7 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 				debug(20, 1) ("storeSwapOutFileClosed: lmt found in url: %s\n",lmt);
 				if(!hittingState) {
 					//is first chunk?
-					if(strcmp(storeKeyText(keyBasedData),dataDigest[0])==0) {
+					if(strcmp(storeKeyText(keyBasedData),dataDigest[0][0])==0) {
 						debug(20, 1) ("storeSwapOutFileClosed: first chunk found\n");
 						//if right,
 						hittingState = 1;
@@ -415,6 +424,7 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
  * Kim Taehee added
  */
 int isLmtMatch(const char* url) {
+	//debug(20, 1) ("isLmtMatch: url: %s\n",url);
 	return strstr(url,lmt);
 }
 
@@ -507,6 +517,7 @@ unsigned char* getStoredFilePrefix(StoreEntry* e) {
  */
 const cache_key* getMD5Digest(const unsigned char* prefix, StoreEntry* e) {
 	static cache_key digest[SQUID_MD5_DIGEST_LENGTH];
+	//char* testStr; //TODO: test
 	SQUID_MD5_CTX M;
 	int replyBodySize = httpReplyBodySize(e->mem_obj->method, e->mem_obj->reply);
 	debug(20, 1) ("getMD5Digest: replyBodySize: %d\n",replyBodySize);
@@ -517,6 +528,11 @@ const cache_key* getMD5Digest(const unsigned char* prefix, StoreEntry* e) {
 
 	SQUID_MD5Final(digest, &M);
 	debug(20, 1) ("getMD5Digest: digest: %s\n",storeKeyText(digest));
+
+	//TODO: test
+//	testStr = storeKeyText(digest);
+//	debug(20, 1) ("getMD5Digest: digest: %s\n",
+			//storeKeyText(storeKeyScan(testStr)));
 
 	return digest;
 }

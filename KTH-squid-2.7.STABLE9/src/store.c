@@ -73,6 +73,12 @@ typedef struct lock_ctrl_t {
 
 extern OBJH storeIOStats;
 
+//Kim Taehee added start
+extern int hittingState;
+extern int hittingOffset;
+extern const char* dataDigest[4][2];
+//Kim Taehee added end
+
 /*
  * local function prototypes
  */
@@ -358,17 +364,43 @@ storeGetPublic(const char *uri, const method_t method)
     return storeGet(storeKeyPublic(uri, method));
 }
 
+/**
+ * Kim Taehee edited to test
+ */
 StoreEntry *
 storeGetPublicByRequestMethod(request_t * req, const method_t method)
 {
-    if (req->vary) {
-	/* Varying objects... */
-	if (req->vary->key)
-	    return storeGet(storeKeyScan(req->vary->key));
-	else
-	    return NULL;
-    }
-    return storeGet(storeKeyPublicByRequestMethod(req, method));
+	if (req->vary) {
+		/* Varying objects... */
+		if (req->vary->key){
+			return storeGet(storeKeyScan(req->vary->key));
+		}
+		else {
+			return NULL;
+		}
+	}
+
+	//Kim Taehee added start
+	debug(20, 1) ("storeGetPublicByRequestMethod: hittingState: %d, offset: %d\n",
+			hittingState, hittingOffset);
+	if(hittingState) {
+		debug(20, 1) ("storeGetPublicByRequestMethod: cachekey: %s\n", dataDigest[hittingOffset][1]);
+		StoreEntry* e = storeGet(storeKeyScan(dataDigest[hittingOffset][1]));
+		if(e && isLmtMatch(req->urlpath.buf)) {
+			debug(20, 1) ("storeGetPublicByRequestMethod: found chunk!\n");
+			hittingOffset++;
+			if(hittingOffset==4) {
+				hittingState = 0;
+				hittingOffset = 0;
+			}
+		} else {
+			debug(20, 1) ("storeGetPublicByRequestMethod: cannot find chunk or not streaming!\n");
+		}
+		return e;
+	}
+	//Kim Taehee added end
+
+	return storeGet(storeKeyPublicByRequestMethod(req, method));
 }
 
 StoreEntry *

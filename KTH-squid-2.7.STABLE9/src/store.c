@@ -511,7 +511,7 @@ char* getEndRangeFromUrl(const char* url) {
 	for(; *ptr!='-'; ptr++);
 
 	ptr+=1; //move offset to begin of end range
-	for(i=0; *(ptr+i)!='\0'; ++i) {
+	for(i=0; 48<=*(ptr+i) && *(ptr+i)<=57; ++i) {	//only count number
 		resultStr[i] = *(ptr+i);
 	}
 

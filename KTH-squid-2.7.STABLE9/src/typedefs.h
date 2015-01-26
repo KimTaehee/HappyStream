@@ -214,6 +214,10 @@ typedef struct _RemovalPolicyNode RemovalPolicyNode;
 typedef struct _RemovalPolicySettings RemovalPolicySettings;
 typedef struct _errormap errormap;
 typedef struct _PeerMonitor PeerMonitor;
+//Kim Taehee added start
+typedef struct _YoutubeChunk YoutubeChunk;
+typedef struct _YoutubeChunkTable YoutubeChunkTable;
+//Kim Taehee added end
 
 typedef struct _http_version_t http_version_t;
 

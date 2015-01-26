@@ -39,6 +39,10 @@ static struct _store_rebuild_data counts;
 static struct timeval rebuild_start;
 static void storeCleanup(void *);
 
+//Kim Taehee added start
+extern YoutubeChunkTable youtubeTable;
+//Kim Taehee added end
+
 typedef struct {
     /* total number of "swap.state" entries that will be read */
     int total;
@@ -151,6 +155,15 @@ storeRebuildComplete(struct _store_rebuild_data *dc)
     debug(20, 1) ("Beginning Validation Procedure\n");
     eventAdd("storeCleanup", storeCleanup, NULL, 0.0, 1);
     safe_free(RebuildProgress);
+
+    //Kim Taehee added start
+    //initializing YouTubeChunkTable
+    youtubeTable.head = NULL;
+    youtubeTable.size = 0;
+
+    //TODO: load youtube table from file
+
+    //Kim Taehee added end
 }
 
 /*

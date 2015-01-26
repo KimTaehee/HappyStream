@@ -41,18 +41,23 @@ static STIOCB storeSwapOutFileNotify;
 static int storeSwapOutAble(const StoreEntry * e);
 unsigned char* getStoredFilePrefix(StoreEntry* e); //Kim Taehee added
 const cache_key* getMD5Digest(const unsigned char* prefix, StoreEntry* e); //Kim Taehee added
-char* isLmtMatch(const char* url); //Kim Taehee added
+const cache_key * getMatchedSwapoutKey(
+		const char* lmt, const int startRange, const int endRange); //Kim Taehee added
 
-//Kim Taehee added start //TODO: temporary.
+
+//Kim Taehee added start
+YoutubeChunkTable youtubeTable;
+
+//TODO: below is temporary.
 //array which is saved data digest info.
-const char* dataDigest[6][2]={ //col 0: datadigest, col 1: matched url digest
-		"B81481242F159F7F4A5886881F0E62E6", "3CF71F0C0A52CFC7C0265D007160C03E", // 0 00000203, 0-65535
-		"B9226AEDECC921063143FB9E39F7B792", "5D835A88FAFD400CB9449F1ADFF61DD6", // 0 00000208, 65536-112336
-		"FE9FD7433E4134F7F704CD36CA900566", "CF5E2345203DF60FE3CA3CEA33E91D8D", // 0 0000020B, 112337-238321
-		"9D879BBE42CC7A5F49EA0A1783DD6C04", "24B70CB4717F7354AE3E88930B4BF868", // 0 0000020D, 238322-492590
-		"CC3460D6932414175F923D630322B690", "2BAEDEA2AF2E0C2FB84D7611B298268F", // 0 0000020F, 492591-1036645
-		"38EDBEF884DDAC40D04CF308ADF60E09", "8F7B288F18A3D9B33AD1C91BEEDBE86E" // 0 00000211, 1036646-1619866
-}; //http://www.youtube.com/watch?v=_SIWDfFR5LU
+//const char* dataDigest[6][2]={ //col 0: datadigest, col 1: matched url digest
+//		"B81481242F159F7F4A5886881F0E62E6", "3CF71F0C0A52CFC7C0265D007160C03E", // 0 00000203, 0-65535
+//		"B9226AEDECC921063143FB9E39F7B792", "5D835A88FAFD400CB9449F1ADFF61DD6", // 0 00000208, 65536-112336
+//		"FE9FD7433E4134F7F704CD36CA900566", "CF5E2345203DF60FE3CA3CEA33E91D8D", // 0 0000020B, 112337-238321
+//		"9D879BBE42CC7A5F49EA0A1783DD6C04", "24B70CB4717F7354AE3E88930B4BF868", // 0 0000020D, 238322-492590
+//		"CC3460D6932414175F923D630322B690", "2BAEDEA2AF2E0C2FB84D7611B298268F", // 0 0000020F, 492591-1036645
+//		"38EDBEF884DDAC40D04CF308ADF60E09", "8F7B288F18A3D9B33AD1C91BEEDBE86E" // 0 00000211, 1036646-1619866
+//}; //http://www.youtube.com/watch?v=_SIWDfFR5LU
 
 //TODO: this is fake chunks list to test. ([3] <-> [2])
 //const char* dataDigest[4][2]={ //col 0: datadigest, col 1: matched url digest
@@ -62,10 +67,10 @@ const char* dataDigest[6][2]={ //col 0: datadigest, col 1: matched url digest
 //		"B33F960B63395C5CBA054FCDA2AEDDBE","43851DF0E763DCABB6DCD4DBB8FACC40",
 //};
 
-int hittingState=0; //1 is hitting, or 0.
-int hittingOffset=0;
-const int numOfchunks=6;
-const char* lmt="1396722499565907"; //http://www.youtube.com/watch?v=_SIWDfFR5LU
+//int hittingState=0; //1 is hitting, or 0.
+//int hittingOffset=0;
+//const int numOfchunks=6;
+//const char* lmt="1396722499565907"; //http://www.youtube.com/watch?v=_SIWDfFR5LU
 // TODO: test lmt "1392948869353355"; http://www.youtube.com/watch?v=FUq1D709JWc
 //Kim Taehee added end
 
@@ -385,8 +390,14 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 		storeDirUpdateSwapSize(&Config.cacheSwap.swapDirs[e->swap_dirn], e->swap_file_sz, 1);
 		if (storeCheckCachable(e)) {
 			//Kim Taehee added start
+			char* url;
 			char* prefix;
-			cache_key* keyBasedData;
+			cache_key* dataDigestKey;
+			char* lmt;
+			int startRange;
+			int endRange;
+			char* dataDigest;
+			char* swapoutDigest;
 			//Kim Taehee added end
 
 			storeLog(STORE_LOG_SWAPOUT, e);
@@ -394,28 +405,23 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 
 			//Kim Taehee added start
 			prefix = getStoredFilePrefix(e);
-			keyBasedData = getMD5Digest(prefix, e);
+			dataDigestKey = getMD5Digest(prefix, e);
 			//debug(20, 1) ("storeSwapOutFileClosed: get body key success\n");
 
-			//TODO:for streaming fwd test
-			if(isLmtMatch(storeUrl(e))){ //if target url and lmt found
-				debug(20, 1) ("storeSwapOutFileClosed: lmt found in url: %s\n",lmt);
-				if(!hittingState) {
-					//is first chunk?
-					if(strcmp(storeKeyText(keyBasedData),dataDigest[0][0])==0) {
-						debug(20, 1) ("storeSwapOutFileClosed: first chunk found\n");
-						//if right,
-						hittingState = 1;
-						hittingOffset = 1;
-					}
-				} else {
-					//cannot reach
-				}
-			} else {
-				//debug(20, 1) ("storeSwapOutFileClosed: lmt not matched\n");
+			url = storeUrl(e);
+
+			if(isYouTubeUrl(url)) {
+				lmt = getLmtFromUrl(url);
+				startRange = getStartRangeFromUrl(url);
+				endRange = getEndRangeFromUrl(url);
+				dataDigest = storeKeyText(dataDigestKey);
+				swapoutDigest = storeKeyText(e->hash.key);
+
+				insertChunkToYoutubeChunkTable(lmt, startRange,
+						endRange, dataDigest, swapoutDigest);
+
 			}
 
-			//xfree(prefix); //TODO: xfree prefix string
 			//Kim Taehee added end
 		}
 		statCounter.swap.outs++;
@@ -429,11 +435,83 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 
 /**
  * Kim Taehee added
+ * search youtube chunks table by lmt.
+ * return: lmt matched swapout key. if cannot find, return null.
  */
-char* isLmtMatch(const char* url) {
-	char* ptr = strstr(url,lmt);
-	//debug(20, 1) ("isLmtMatch: url: %s\n",url);
-	return ptr;
+const cache_key * getMatchedSwapoutKey(
+		const char* lmt, const int startRange, const int endRange) {
+
+//	static cache_key digest[SQUID_MD5_DIGEST_LENGTH];
+	int i;
+	YoutubeChunk* currNode;
+
+	currNode = youtubeTable.head;
+
+	debug(20, 1) ("getMatchedSwapoutKey: called.\n");
+	debug(20, 1) ("getMatchedSwapoutKey: youtube table size: %d\n",youtubeTable.size);
+	debug(20, 1) ("getMatchedSwapoutKey: youtubeTable.head: %p.\n",youtubeTable.head);
+
+	for(i=0;i<youtubeTable.size;++i) {
+		//debug(20, 1) ("getMatchedSwapoutKey: i: %d, currnode addr: %p\n",i,currNode);
+		if(currNode) {
+			if(strcmp(currNode->lmt,lmt)==0
+					&& currNode->startRange == startRange
+					&& currNode->endRange == endRange) {
+				debug(20, 1) ("getMatchedSwapoutKey: matched on i: %d, swapout key: %s\n",i,currNode->swapoutDigest);
+				return storeKeyScan(currNode->swapoutDigest);
+			}
+		}
+
+		currNode = currNode->next;
+	}
+	debug(20, 1) ("getMatchedSwapoutKey: no matched swapout key\n");
+
+	return NULL;
+}
+
+/**
+ * Kim Taehee added.
+ * desc: this call will be invoked when not duplicated chunk is exist on table.(TCP_MISS)
+ */
+void insertChunkToYoutubeChunkTable(char* lmt, int startRange,
+		int endRange, char* dataDigest, char* swapoutDigest) {
+
+	int i;
+	YoutubeChunk* newNode = (YoutubeChunk*)xmalloc(sizeof(YoutubeChunk));
+	YoutubeChunk* currNode = youtubeTable.head;
+
+	debug(20, 1) ("insertChunkToYoutubeChunkTable: called\n");
+	debug(20, 1) ("insertChunkToYoutubeChunkTable: newnode addr: %p\n",newNode);
+	debug(20, 1) ("getMatchedSwapoutKey: youtubeTable.head: %p.\n",youtubeTable.head);
+
+	//debug(20, 1) ("insertChunkToYoutubeChunkTable: lmt: %s\n",lmt);
+	strcpy(newNode->lmt,lmt);
+	//debug(20, 1) ("insertChunkToYoutubeChunkTable: newNode->lmt: %s\n",newNode->lmt);
+	newNode->startRange = startRange;
+	newNode->endRange = endRange;
+	//debug(20, 1) ("insertChunkToYoutubeChunkTable: dataDigest: %s\n",dataDigest);
+	strcpy(newNode->dataDigest,dataDigest);
+	//debug(20, 1) ("insertChunkToYoutubeChunkTable: newNode->dataDigest: %s\n",newNode->dataDigest);
+	//debug(20, 1) ("insertChunkToYoutubeChunkTable: swapoutDigest: %s\n",swapoutDigest);
+	strcpy(newNode->swapoutDigest,swapoutDigest);
+	//debug(20, 1) ("insertChunkToYoutubeChunkTable: newNode->swapoutDigest: %s\n",newNode->swapoutDigest);
+	newNode->next = NULL;
+
+	for(i=0;i<youtubeTable.size-1;++i) {
+		currNode = currNode->next;
+		//debug(20, 1) ("insertChunkToYoutubeChunkTable: i: %d, currnode addr: %p\n",i,currNode);
+	}
+
+	//append on end of table
+	if(youtubeTable.size == 0) {
+		youtubeTable.head = newNode;
+	} else {
+		currNode->next = newNode;
+	}
+	youtubeTable.size++;
+
+	debug(20, 1) ("insertChunkToYoutubeChunkTable: table size: %d\n",youtubeTable.size);
+	//TODO: release mem when app finish
 }
 
 /**
@@ -460,7 +538,7 @@ unsigned char* getStoredFilePrefix(StoreEntry* e) {
 	char logTemp[9000];
 	int sprintfOffset;
 
-	prefix = (unsigned char*)xcalloc(prefixSize,prefixSize);
+	prefix = (unsigned char*)xcalloc(prefixSize,sizeof(unsigned char));
 	sd = &Config.cacheSwap.swapDirs[e->swap_dirn];
 	//debug(20, 1) ("swapDir: %s\nswap_dirn: %d\nswap_filen: %08X\n", sd->path,e->swap_dirn,e->swap_filen);
 

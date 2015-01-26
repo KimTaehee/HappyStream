@@ -73,13 +73,6 @@ typedef struct lock_ctrl_t {
 
 extern OBJH storeIOStats;
 
-//Kim Taehee added start
-extern int hittingState;
-extern int hittingOffset;
-extern const char* dataDigest[4][2];
-extern const int numOfchunks;
-//Kim Taehee added end
-
 /*
  * local function prototypes
  */
@@ -96,6 +89,13 @@ static int getKeyCounter(void);
 static int storeKeepInMemory(const StoreEntry *);
 static OBJH storeCheckCachableStats;
 static EVH storeLateRelease;
+//Kim Taehee added start
+char* isYouTubeUrl(const char * url);
+char* getLmtFromUrl(const char* url);
+char* getEndRangeFromUrl(const char* url);
+int getStartRangeFromUrl(const char* url);
+//Kim Taehee added end
+
 
 /*
  * local variables
@@ -366,11 +366,21 @@ storeGetPublic(const char *uri, const method_t method)
 }
 
 /**
- * Kim Taehee edited to test
+ * Kim Taehee edited
  */
 StoreEntry *
 storeGetPublicByRequestMethod(request_t * req, const method_t method)
 {
+	//Kim Taehee added start
+	char *url;
+	char lmt[20];
+	int startRange;
+	int endRange;
+	cache_key* digest; //digest[SQUID_MD5_DIGEST_LENGTH];
+	StoreEntry* e;
+	//Kim Taehee added end
+
+
 	if (req->vary) {
 		/* Varying objects... */
 		if (req->vary->key){
@@ -382,28 +392,140 @@ storeGetPublicByRequestMethod(request_t * req, const method_t method)
 	}
 
 	//Kim Taehee added start
-	debug(20, 1) ("storeGetPublicByRequestMethod: hittingState: %d, offset: %d\n",
-			hittingState, hittingOffset);
-	if(hittingState) {
-		debug(20, 1) ("storeGetPublicByRequestMethod: cachekey: %s\n", dataDigest[hittingOffset][1]);
-		StoreEntry* e = storeGet(storeKeyScan(dataDigest[hittingOffset][1]));
-		if(e && isLmtMatch(req->urlpath.buf)) {
-			debug(20, 1) ("storeGetPublicByRequestMethod: found chunk!\n");
-			hittingOffset++;
-			if(hittingOffset==numOfchunks) {
-				hittingState = 0;
-				hittingOffset = 0;
+	//check youtube url
+	if(isYouTubeUrl(req->urlpath.buf)) {
+		url = req->urlpath.buf;
+
+		strcpy(lmt, getLmtFromUrl(url));
+		startRange = getStartRangeFromUrl(url);
+		endRange = getEndRangeFromUrl(url);
+
+		digest = getMatchedSwapoutKey(lmt,startRange,endRange);
+		if(digest) {
+			debug(20, 1) ("storeGetPublicByRequestMethod: digest on table: %s by lmt: %s, range: %d-%d\n",
+					storeKeyText(digest),lmt,startRange,endRange);
+			e = storeGet(digest);
+
+			if (!e) {
+				debug(20, 1) ("storeGetPublicByRequestMethod: found on table but no store!\n");
 			}
+			return e;
+
 		} else {
-			debug(20, 1) ("storeGetPublicByRequestMethod: cannot find chunk or not streaming!\n");
-			return storeGet(storeKeyPublicByRequestMethod(req, method));
+			debug(20, 1) ("storeGetPublicByRequestMethod: no matched digest on table\n");
 		}
-		return e;
+
+		//check
 	}
+
+
+//	if(hittingState) {
+//		debug(20, 1) ("storeGetPublicByRequestMethod: cachekey: %s\n", dataDigest[hittingOffset][1]);
+//		StoreEntry* e = storeGet(storeKeyScan(dataDigest[hittingOffset][1]));
+//		if(e && isLmtMatch(req->urlpath.buf)) {
+//			debug(20, 1) ("storeGetPublicByRequestMethod: found chunk!\n");
+//			hittingOffset++;
+//			if(hittingOffset==numOfchunks) {
+//				hittingState = 0;
+//				hittingOffset = 0;
+//			}
+//		} else {
+//			debug(20, 1) ("storeGetPublicByRequestMethod: cannot find chunk or not streaming!\n");
+//			return storeGet(storeKeyPublicByRequestMethod(req, method));
+//		}
+//		return e;
+//	}
 	//Kim Taehee added end
 
 	return storeGet(storeKeyPublicByRequestMethod(req, method));
 }
+
+//Kim Taehee added start
+char* isYouTubeUrl(const char * url) {
+	char* ptr = strstr(url,"/videoplayback?");
+	return ptr;
+
+}
+
+char* getLmtFromUrl(const char* url) {
+	char* ptr = strstr(url,"lmt=");
+	static char result[20];
+	int i;
+
+	memset(result,0,20); //init
+
+	if(!ptr) {
+		debug(20, 1) ("getLmtFromUrl: cannot find lmt in url\n");
+		return NULL;
+	}
+
+	ptr+=4; //move offset to begin of lmt
+	for(i=0; *(ptr+i)!='&'; ++i) {
+		result[i] = *(ptr+i);
+	}
+	debug(20, 1) ("getLmtFromUrl: lmt parsed: %s\n",result);
+
+	return result;
+}
+
+int getStartRangeFromUrl(const char* url) {
+	char* ptr = strstr(url,"&range=");
+	char resultStr[30];
+	int result;
+	int i;
+
+	memset(resultStr,0,30); //init
+
+	if(!ptr) {
+		debug(20, 1) ("getStartRangeFromUrl: cannot find\n");
+		return NULL;
+	}
+
+	ptr+=7; //move offset to begin of start range
+	for(i=0; *(ptr+i)!='-'; ++i) {
+		resultStr[i] = *(ptr+i);
+	}
+	//debug(20, 1) ("getStartRangeFromUrl: rangeStr[0]: %d\n",resultStr[0]);
+	//debug(20, 1) ("getStartRangeFromUrl: rangeStr[1]: %d\n",resultStr[1]);
+	result = atoi(resultStr);
+	debug(20, 1) ("getStartRangeFromUrl: range parsed: %d\n",result);
+
+	return result;
+}
+
+char* getEndRangeFromUrl(const char* url) {
+	char* ptr = strstr(url,"&range=");
+	char resultStr[30];
+	int result;
+	int i;
+
+	//debug(20, 1) ("getEndRangeFromUrl: called\n");
+	memset(resultStr,0,30); //init
+
+	if(!ptr) {
+		debug(20, 1) ("getEndRangeFromUrl: cannot find\n");
+		return NULL;
+	}
+
+	ptr+=7; //move offset to begin of start range
+	for(; *ptr!='-'; ptr++);
+
+	ptr+=1; //move offset to begin of end range
+	for(i=0; *(ptr+i)!='\0'; ++i) {
+		resultStr[i] = *(ptr+i);
+	}
+
+	result = atoi(resultStr);
+	debug(20, 1) ("getEndRangeFromUrl: range parsed: %d\n",result);
+
+	return result;
+}
+
+
+
+//Kim Taehee added end
+
+
 
 StoreEntry *
 storeGetPublicByRequest(request_t * req)

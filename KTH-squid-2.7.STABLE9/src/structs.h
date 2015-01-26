@@ -1153,6 +1153,23 @@ struct _HttpStateData {
     String chunkhdr;
 };
 
+//Kim Taehee added start
+struct _YoutubeChunk {
+	char lmt[20];
+	int startRange;
+	int endRange;
+	char dataDigest[40];
+	char swapoutDigest[40];
+	YoutubeChunk* next;
+};
+
+struct _YoutubeChunkTable { //list of youtube chunks
+	YoutubeChunk* head;
+	int size;
+};
+
+//Kim Taehee added end
+
 struct _icpUdpData {
     struct sockaddr_in address;
     void *msg;

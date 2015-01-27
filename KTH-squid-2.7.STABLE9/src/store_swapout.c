@@ -39,11 +39,15 @@ static void storeSwapOutStart(StoreEntry * e);
 static STIOCB storeSwapOutFileClosed;
 static STIOCB storeSwapOutFileNotify;
 static int storeSwapOutAble(const StoreEntry * e);
-unsigned char* getStoredFilePrefix(StoreEntry* e); //Kim Taehee added
+
+//Kim Taehee added func start
+unsigned char* getStoredFilePrefix(StoreEntry* e);
 const cache_key* getMD5Digest(const unsigned char* prefix, StoreEntry* e); //Kim Taehee added
 const cache_key * getMatchedSwapoutKey(
 		const char* lmt, const int startRange, const int endRange); //Kim Taehee added
-
+void appendChunkToTableFile(char* lmt, int startRange, int endRange,
+		char* dataDigest, char* swapoutDigest, StoreEntry* e);
+//Kim Taehee added func end
 
 //Kim Taehee added start
 YoutubeChunkTable youtubeTable;
@@ -420,6 +424,9 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 				insertChunkToYoutubeChunkTable(lmt, startRange,
 						endRange, dataDigest, swapoutDigest);
 
+				appendChunkToTableFile(lmt, startRange,
+						endRange, dataDigest, swapoutDigest, e);
+
 			}
 
 			//Kim Taehee added end
@@ -512,6 +519,35 @@ void insertChunkToYoutubeChunkTable(char* lmt, int startRange,
 
 	debug(20, 1) ("insertChunkToYoutubeChunkTable: table size: %d\n",youtubeTable.size);
 	//TODO: release mem when app finish
+}
+
+/**
+ * Kim Taehee added.
+ * desc: write chunk to table file()
+ */
+void appendChunkToTableFile(char* lmt, int startRange, int endRange,
+		char* dataDigest, char* swapoutDigest, StoreEntry* e) {
+
+	SwapDir *sd;
+	int fd;
+	char tableFilePath[256];
+	sd = &Config.cacheSwap.swapDirs[e->swap_dirn]; //..../var/cache
+
+	strcpy(tableFilePath, sd->path);
+	strcat(tableFilePath, "/youtubetable.state");
+
+	debug(20, 1) ("appendChunkToTableFile: called. tableFilePath: %s\n",tableFilePath);
+
+	fd = file_open(tableFilePath,O_WRONLY|O_CREAT|O_APPEND);
+
+	if(fd<0) {
+		debug(20, 1) ("appendChunkToTableFile: FATAL: cannot open file %s\n",tableFilePath);
+		exit(1);
+	}
+
+	dprintf(fd,"%s,%d,%d,%s,%s@\n",lmt,startRange,endRange,dataDigest,swapoutDigest);
+
+
 }
 
 /**

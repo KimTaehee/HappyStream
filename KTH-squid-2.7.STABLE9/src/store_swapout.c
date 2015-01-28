@@ -396,12 +396,12 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 			//Kim Taehee added start
 			char* url;
 			char* prefix;
-			cache_key* dataDigestKey;
-			char* lmt;
+			cache_key dataDigestKey[SQUID_MD5_DIGEST_LENGTH];
+			char lmt[20]={0,};
 			int startRange;
 			int endRange;
-			char* dataDigest;
-			char* swapoutDigest;
+			char dataDigest[40]={0,};
+			char swapoutDigest[40]={0,};
 			//Kim Taehee added end
 
 			storeLog(STORE_LOG_SWAPOUT, e);
@@ -409,17 +409,16 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 
 			//Kim Taehee added start
 			prefix = getStoredFilePrefix(e);
-			dataDigestKey = getMD5Digest(prefix, e);
-			//debug(20, 1) ("storeSwapOutFileClosed: get body key success\n");
+			storeKeyCopy(dataDigestKey,getMD5Digest(prefix, e));
 
 			url = storeUrl(e);
 
 			if(isYouTubeUrl(url)) {
-				lmt = getLmtFromUrl(url);
+				strcpy(lmt,getLmtFromUrl(url));
 				startRange = getStartRangeFromUrl(url);
 				endRange = getEndRangeFromUrl(url);
-				dataDigest = storeKeyText(dataDigestKey);
-				swapoutDigest = storeKeyText(e->hash.key);
+				strcpy(dataDigest,storeKeyText(dataDigestKey));
+				strcpy(swapoutDigest,storeKeyText(e->hash.key));
 
 				insertChunkToYoutubeChunkTable(lmt, startRange,
 						endRange, dataDigest, swapoutDigest);
@@ -454,9 +453,9 @@ const cache_key * getMatchedSwapoutKey(
 
 	currNode = youtubeTable.head;
 
-	debug(20, 1) ("getMatchedSwapoutKey: called.\n");
-	debug(20, 1) ("getMatchedSwapoutKey: youtube table size: %d\n",youtubeTable.size);
-	debug(20, 1) ("getMatchedSwapoutKey: youtubeTable.head: %p.\n",youtubeTable.head);
+	debug(20, 4) ("getMatchedSwapoutKey: called.\n");
+	debug(20, 3) ("getMatchedSwapoutKey: youtube table size: %d\n",youtubeTable.size);
+	debug(20, 4) ("getMatchedSwapoutKey: youtubeTable.head: %p.\n",youtubeTable.head);
 
 	for(i=0;i<youtubeTable.size;++i) {
 		//debug(20, 1) ("getMatchedSwapoutKey: i: %d, currnode addr: %p\n",i,currNode);
@@ -464,14 +463,15 @@ const cache_key * getMatchedSwapoutKey(
 			if(strcmp(currNode->lmt,lmt)==0
 					&& currNode->startRange == startRange
 					&& currNode->endRange == endRange) {
-				debug(20, 1) ("getMatchedSwapoutKey: matched on i: %d, swapout key: %s\n",i,currNode->swapoutDigest);
+				debug(20, 1) ("getMatchedSwapoutKey: matched on i:%d, lmt:%s, range:%d-%d, swapout key: %s\n",
+						i,lmt,startRange,endRange,currNode->swapoutDigest);
 				return storeKeyScan(currNode->swapoutDigest);
 			}
 		}
 
 		currNode = currNode->next;
 	}
-	debug(20, 1) ("getMatchedSwapoutKey: no matched swapout key\n");
+	debug(20, 1) ("getMatchedSwapoutKey: no matched swapout key. lmt:%s, range:%d-%d\n",lmt,startRange,endRange);
 
 	return NULL;
 }
@@ -487,9 +487,9 @@ void insertChunkToYoutubeChunkTable(char* lmt, int startRange,
 	YoutubeChunk* newNode = (YoutubeChunk*)xmalloc(sizeof(YoutubeChunk));
 	YoutubeChunk* currNode = youtubeTable.head;
 
-	debug(20, 1) ("insertChunkToYoutubeChunkTable: called\n");
-	debug(20, 1) ("insertChunkToYoutubeChunkTable: newnode addr: %p\n",newNode);
-	debug(20, 1) ("getMatchedSwapoutKey: youtubeTable.head: %p.\n",youtubeTable.head);
+	debug(20, 3) ("insertChunkToYoutubeChunkTable: called\n");
+	debug(20, 4) ("insertChunkToYoutubeChunkTable: newnode addr: %p\n",newNode);
+	debug(20, 4) ("getMatchedSwapoutKey: youtubeTable.head: %p.\n",youtubeTable.head);
 
 	//debug(20, 1) ("insertChunkToYoutubeChunkTable: lmt: %s\n",lmt);
 	strcpy(newNode->lmt,lmt);
@@ -498,10 +498,10 @@ void insertChunkToYoutubeChunkTable(char* lmt, int startRange,
 	newNode->endRange = endRange;
 	//debug(20, 1) ("insertChunkToYoutubeChunkTable: dataDigest: %s\n",dataDigest);
 	strcpy(newNode->dataDigest,dataDigest);
-	//debug(20, 1) ("insertChunkToYoutubeChunkTable: newNode->dataDigest: %s\n",newNode->dataDigest);
+	debug(20, 3) ("insertChunkToYoutubeChunkTable: newNode->dataDigest: %s\n",newNode->dataDigest);
 	//debug(20, 1) ("insertChunkToYoutubeChunkTable: swapoutDigest: %s\n",swapoutDigest);
 	strcpy(newNode->swapoutDigest,swapoutDigest);
-	//debug(20, 1) ("insertChunkToYoutubeChunkTable: newNode->swapoutDigest: %s\n",newNode->swapoutDigest);
+	debug(20, 3) ("insertChunkToYoutubeChunkTable: newNode->swapoutDigest: %s\n",newNode->swapoutDigest);
 	newNode->next = NULL;
 
 	for(i=0;i<youtubeTable.size-1;++i) {
@@ -517,7 +517,7 @@ void insertChunkToYoutubeChunkTable(char* lmt, int startRange,
 	}
 	youtubeTable.size++;
 
-	debug(20, 1) ("insertChunkToYoutubeChunkTable: table size: %d\n",youtubeTable.size);
+	debug(20, 3) ("insertChunkToYoutubeChunkTable: table size: %d\n",youtubeTable.size);
 	//TODO: release mem when app finish
 }
 
@@ -536,7 +536,7 @@ void appendChunkToTableFile(char* lmt, int startRange, int endRange,
 	strcpy(tableFilePath, sd->path);
 	strcat(tableFilePath, "/youtubetable.state");
 
-	debug(20, 1) ("appendChunkToTableFile: called. tableFilePath: %s\n",tableFilePath);
+	debug(20, 3) ("appendChunkToTableFile: called. dataDigest:%s, swapoutDigest:%s\n",dataDigest,swapoutDigest);
 
 	fd = file_open(tableFilePath,O_WRONLY|O_CREAT|O_APPEND);
 
@@ -545,8 +545,9 @@ void appendChunkToTableFile(char* lmt, int startRange, int endRange,
 		exit(1);
 	}
 
-	dprintf(fd,"%s,%d,%d,%s,%s@\n",lmt,startRange,endRange,dataDigest,swapoutDigest);
+	dprintf(fd,"%s,%015d,%015d,%s,%s@\n",lmt,startRange,endRange,dataDigest,swapoutDigest);
 
+	file_close(fd);
 
 }
 
@@ -579,7 +580,7 @@ unsigned char* getStoredFilePrefix(StoreEntry* e) {
 	//debug(20, 1) ("swapDir: %s\nswap_dirn: %d\nswap_filen: %08X\n", sd->path,e->swap_dirn,e->swap_filen);
 
 	fullpath = storeUfsDirFullPath(sd,e->swap_filen,NULL);
-	debug(20, 1) ("getStoredFilePrefix: fullpath: %s\n",fullpath);
+	debug(20, 3) ("getStoredFilePrefix: fullpath: %s\n",fullpath);
 
 	fd = file_open(fullpath,O_RDONLY|O_BINARY);
 	if(fd<0) {
@@ -607,10 +608,10 @@ unsigned char* getStoredFilePrefix(StoreEntry* e) {
 		//printf("read: %d, pos: %p, buf: %p\n",read, pos, buf);
 		headerSize = readBytes + (pos - buf) + 4;
 	}
-	debug(20, 1) ("getStoredFilePrefix: header size: %d\n",headerSize);
+	debug(20, 4) ("getStoredFilePrefix: header size: %d\n",headerSize);
 
 	seekResult = lseek(fd,headerSize,SEEK_SET);
-	debug(20, 1) ("getStoredFilePrefix: lseek result: %d\n",seekResult);
+	debug(20, 4) ("getStoredFilePrefix: lseek result: %d\n",seekResult);
 	if(seekResult != headerSize) {
 		debug(20, 1) ("getStoredFilePrefix: FATAL: lseek err\n"); //TODO: fatal err
 		exit(1);
@@ -619,7 +620,7 @@ unsigned char* getStoredFilePrefix(StoreEntry* e) {
 		debug(20, 1) ("getStoredFilePrefix: FATAL: read err\n"); //TODO: fatal err
 		exit(1);
 	}
-	debug(20, 1) ("getStoredFilePrefix: read result: %d\n",readResult);
+	debug(20, 4) ("getStoredFilePrefix: read result: %d\n",readResult);
 
 	file_close(fd);
 
@@ -642,14 +643,16 @@ const cache_key* getMD5Digest(const unsigned char* prefix, StoreEntry* e) {
 	//char* testStr; //TODO: test
 	SQUID_MD5_CTX M;
 	int replyBodySize = httpReplyBodySize(e->mem_obj->method, e->mem_obj->reply);
-	debug(20, 1) ("getMD5Digest: replyBodySize: %d\n",replyBodySize);
+	debug(20, 4) ("getMD5Digest: replyBodySize: %d\n",replyBodySize);
+
+	memset(digest,0,SQUID_MD5_DIGEST_LENGTH);
 
 	SQUID_MD5Init(&M);
 	SQUID_MD5Update(&M, (unsigned char *) prefix, 4096); //origin is unsigned char
 	SQUID_MD5Update(&M, &replyBodySize, sizeof(replyBodySize));
 
 	SQUID_MD5Final(digest, &M);
-	debug(20, 1) ("getMD5Digest: digest: %s\n",storeKeyText(digest));
+	debug(20, 3) ("getMD5Digest: digest: %s\n",storeKeyText(digest));
 
 	//TODO: test
 //	testStr = storeKeyText(digest);

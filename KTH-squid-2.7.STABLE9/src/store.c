@@ -402,17 +402,17 @@ storeGetPublicByRequestMethod(request_t * req, const method_t method)
 
 		digest = getMatchedSwapoutKey(lmt,startRange,endRange);
 		if(digest) {
-			debug(20, 1) ("storeGetPublicByRequestMethod: digest on table: %s by lmt: %s, range: %d-%d\n",
+			debug(20, 4) ("storeGetPublicByRequestMethod: digest on table: %s by lmt: %s, range: %d-%d\n",
 					storeKeyText(digest),lmt,startRange,endRange);
 			e = storeGet(digest);
 
 			if (!e) {
-				debug(20, 1) ("storeGetPublicByRequestMethod: found on table but no store!\n");
+				debug(20, 3) ("storeGetPublicByRequestMethod: found on table but no store!\n");
 			}
 			return e;
 
 		} else {
-			debug(20, 1) ("storeGetPublicByRequestMethod: no matched digest on table\n");
+			debug(20, 4) ("storeGetPublicByRequestMethod: no matched digest on table\n");
 		}
 
 		//check
@@ -455,7 +455,7 @@ char* getLmtFromUrl(const char* url) {
 	memset(result,0,20); //init
 
 	if(!ptr) {
-		debug(20, 1) ("getLmtFromUrl: cannot find lmt in url\n");
+		debug(20, 3) ("getLmtFromUrl: cannot find lmt in url\n");
 		return NULL;
 	}
 
@@ -463,7 +463,7 @@ char* getLmtFromUrl(const char* url) {
 	for(i=0; *(ptr+i)!='&'; ++i) {
 		result[i] = *(ptr+i);
 	}
-	debug(20, 1) ("getLmtFromUrl: lmt parsed: %s\n",result);
+	debug(20, 3) ("getLmtFromUrl: lmt parsed: %s\n",result);
 
 	return result;
 }
@@ -477,7 +477,7 @@ int getStartRangeFromUrl(const char* url) {
 	memset(resultStr,0,30); //init
 
 	if(!ptr) {
-		debug(20, 1) ("getStartRangeFromUrl: cannot find\n");
+		debug(20, 3) ("getStartRangeFromUrl: cannot find\n");
 		return NULL;
 	}
 
@@ -488,7 +488,7 @@ int getStartRangeFromUrl(const char* url) {
 	//debug(20, 1) ("getStartRangeFromUrl: rangeStr[0]: %d\n",resultStr[0]);
 	//debug(20, 1) ("getStartRangeFromUrl: rangeStr[1]: %d\n",resultStr[1]);
 	result = atoi(resultStr);
-	debug(20, 1) ("getStartRangeFromUrl: range parsed: %d\n",result);
+	debug(20, 3) ("getStartRangeFromUrl: range parsed: %d\n",result);
 
 	return result;
 }
@@ -503,7 +503,7 @@ char* getEndRangeFromUrl(const char* url) {
 	memset(resultStr,0,30); //init
 
 	if(!ptr) {
-		debug(20, 1) ("getEndRangeFromUrl: cannot find\n");
+		debug(20, 3) ("getEndRangeFromUrl: cannot find\n");
 		return NULL;
 	}
 
@@ -516,7 +516,7 @@ char* getEndRangeFromUrl(const char* url) {
 	}
 
 	result = atoi(resultStr);
-	debug(20, 1) ("getEndRangeFromUrl: range parsed: %d\n",result);
+	debug(20, 3) ("getEndRangeFromUrl: range parsed: %d\n",result);
 
 	return result;
 }

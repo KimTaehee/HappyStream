@@ -41,6 +41,8 @@ static void storeCleanup(void *);
 
 //Kim Taehee added start
 extern YoutubeChunkTable youtubeTable;
+
+void readChunkFromTableFile();
 //Kim Taehee added end
 
 typedef struct {
@@ -161,9 +163,75 @@ storeRebuildComplete(struct _store_rebuild_data *dc)
     youtubeTable.head = NULL;
     youtubeTable.size = 0;
 
-    //TODO: load youtube table from file
 
+    readChunkFromTableFile();
     //Kim Taehee added end
+}
+
+/**
+ * Kim Taehee added
+ */
+void readChunkFromTableFile() {
+	SwapDir *sd;
+	int fd;
+	char tableFilePath[256];
+	char buf[120]={0,};
+	int unit=116;
+	int i, n;
+
+	//TODO: is [0] right?
+	sd = &Config.cacheSwap.swapDirs[0]; //..../var/cache
+
+	strcpy(tableFilePath, sd->path);
+	strcat(tableFilePath, "/youtubetable.state");
+
+	debug(20, 1) ("readChunkFromTableFile: tablefilepath: %s\n",tableFilePath);
+
+	fd = file_open(tableFilePath,O_RDONLY|O_CREAT);
+
+	if(fd<0) {
+		debug(20, 1) ("readChunkFromTableFile: FATAL: cannot open file %s\n",tableFilePath);
+		exit(1);
+	}
+
+	while((n=read(fd, buf, unit)) > 0) { //read file loop
+		char *ptr;
+		char lmt[20]={0,}; //TOOD: assume 16B
+		int startRange;
+		int endRange;
+		char dataDigest[40]={0,};
+		char swapoutDigest[40]={0,};
+		char temp[20];
+
+		debug(20, 3) ("readChunkFromTableFile: %s n:%d\n",buf,n);
+
+		//start parse
+		//TODO: fixme!
+		strncpy(lmt,buf,16);
+		//debug(20, 1) ("readChunkFromTableFile: lmt:%s\n",lmt);
+
+		strncpy(temp,buf+17,15);
+		startRange = atoi(temp);
+		//debug(20, 1) ("readChunkFromTableFile: startRange str:%s\n",temp);
+		//debug(20, 1) ("readChunkFromTableFile: startRange:%d\n",startRange);
+
+		strncpy(temp,buf+33,15);
+		endRange = atoi(temp);
+		//debug(20, 1) ("readChunkFromTableFile: endRange str:%s\n",temp);
+		//debug(20, 1) ("readChunkFromTableFile: endRange:%d\n",endRange);
+
+		strncpy(dataDigest,buf+49,32);
+		//debug(20, 1) ("readChunkFromTableFile: dataDigest:%s\n",dataDigest);
+
+		strncpy(swapoutDigest,buf+82,32);
+		//debug(20, 1) ("readChunkFromTableFile: swapoutDigest:%s\n",swapoutDigest);
+
+		insertChunkToYoutubeChunkTable(lmt,startRange,endRange,dataDigest,swapoutDigest);
+
+	}
+
+	debug(20, 1) ("readChunkFromTableFile: done. table size:%d\n",youtubeTable.size);
+
 }
 
 /*

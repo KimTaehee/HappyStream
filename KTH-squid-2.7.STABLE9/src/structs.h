@@ -1154,17 +1154,16 @@ struct _HttpStateData {
 };
 
 //Kim Taehee added start
-struct _YoutubeChunk {
-	char lmt[20];
-	int startRange;
-	int endRange;
+struct _DailyMotionChunk {
+	char vid[40];
+	int frag;
 	char dataDigest[40];
 	char swapoutDigest[40];
-	YoutubeChunk* next;
+	DailyMotionChunk* next;
 };
 
-struct _YoutubeChunkTable { //list of youtube chunks
-	YoutubeChunk* head;
+struct _DailyMotionChunkTable { //list of daily motion chunks
+	DailyMotionChunk* head;
 	int size;
 };
 

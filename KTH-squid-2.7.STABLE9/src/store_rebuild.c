@@ -40,7 +40,7 @@ static struct timeval rebuild_start;
 static void storeCleanup(void *);
 
 //Kim Taehee added start
-extern YoutubeChunkTable youtubeTable;
+extern DailyMotionChunkTable dailyMotionTable;
 
 void readChunkFromTableFile();
 //Kim Taehee added end
@@ -159,9 +159,9 @@ storeRebuildComplete(struct _store_rebuild_data *dc)
     safe_free(RebuildProgress);
 
     //Kim Taehee added start
-    //initializing YouTubeChunkTable
-    youtubeTable.head = NULL;
-    youtubeTable.size = 0;
+    //initializing Table
+    dailyMotionTable.head = NULL;
+    dailyMotionTable.size = 0;
 
 
     readChunkFromTableFile();
@@ -176,14 +176,14 @@ void readChunkFromTableFile() {
 	int fd;
 	char tableFilePath[256];
 	char buf[120]={0,};
-	int unit=116;
+	int unit=112; //except for newline
 	int i, n;
 
 	//TODO: is [0] right?
 	sd = &Config.cacheSwap.swapDirs[0]; //..../var/cache
 
 	strcpy(tableFilePath, sd->path);
-	strcat(tableFilePath, "/youtubetable.state");
+	strcat(tableFilePath, "/dailymotiontable.state");
 
 	debug(20, 1) ("readChunkFromTableFile: tablefilepath: %s\n",tableFilePath);
 
@@ -196,9 +196,8 @@ void readChunkFromTableFile() {
 
 	while((n=read(fd, buf, unit)) > 0) { //read file loop
 		char *ptr;
-		char lmt[20]={0,}; //TOOD: assume 16B
-		int startRange;
-		int endRange;
+		char vid[40]={0,}; //TODO: 32B
+		int frag;
 		char dataDigest[40]={0,};
 		char swapoutDigest[40]={0,};
 		char temp[20];
@@ -207,31 +206,27 @@ void readChunkFromTableFile() {
 
 		//start parse
 		//TODO: fixme!
-		strncpy(lmt,buf,16);
+		strncpy(vid,buf,32);
 		//debug(20, 1) ("readChunkFromTableFile: lmt:%s\n",lmt);
 
-		strncpy(temp,buf+17,15);
-		startRange = atoi(temp);
+		strncpy(temp,buf+33,12);
+		frag = atoi(temp);
 		//debug(20, 1) ("readChunkFromTableFile: startRange str:%s\n",temp);
 		//debug(20, 1) ("readChunkFromTableFile: startRange:%d\n",startRange);
 
-		strncpy(temp,buf+33,15);
-		endRange = atoi(temp);
-		//debug(20, 1) ("readChunkFromTableFile: endRange str:%s\n",temp);
-		//debug(20, 1) ("readChunkFromTableFile: endRange:%d\n",endRange);
-
-		strncpy(dataDigest,buf+49,32);
+		strncpy(dataDigest,buf+45,32);
 		//debug(20, 1) ("readChunkFromTableFile: dataDigest:%s\n",dataDigest);
 
-		strncpy(swapoutDigest,buf+82,32);
+		strncpy(swapoutDigest,buf+88,32);
 		//debug(20, 1) ("readChunkFromTableFile: swapoutDigest:%s\n",swapoutDigest);
 
-		insertChunkToYoutubeChunkTable(lmt,startRange,endRange,dataDigest,swapoutDigest);
+		insertChunkToDailyMotionChunkTable(vid,frag,dataDigest,swapoutDigest);
 
 	}
 
-	debug(20, 1) ("readChunkFromTableFile: done. table size:%d\n",youtubeTable.size);
+	debug(20, 1) ("readChunkFromTableFile: done. table size:%d\n",dailyMotionTable.size);
 
+	file_close(fd);
 }
 
 /*

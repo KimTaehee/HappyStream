@@ -44,13 +44,13 @@ static int storeSwapOutAble(const StoreEntry * e);
 unsigned char* getStoredFilePrefix(StoreEntry* e);
 const cache_key* getMD5Digest(const unsigned char* prefix, StoreEntry* e); //Kim Taehee added
 const cache_key * getMatchedSwapoutKey(
-		const char* lmt, const int startRange, const int endRange); //Kim Taehee added
-void appendChunkToTableFile(char* lmt, int startRange, int endRange,
+		const char* vid, const int frag); //Kim Taehee added
+void appendChunkToTableFile(char* vid, int frag,
 		char* dataDigest, char* swapoutDigest, StoreEntry* e);
 //Kim Taehee added func end
 
 //Kim Taehee added start
-YoutubeChunkTable youtubeTable;
+DailyMotionChunkTable dailyMotionTable;
 
 //TODO: below is temporary.
 //array which is saved data digest info.
@@ -397,9 +397,8 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 			char* url;
 			char* prefix;
 			cache_key dataDigestKey[SQUID_MD5_DIGEST_LENGTH];
-			char lmt[20]={0,};
-			int startRange;
-			int endRange;
+			char vid[40]={0,};
+			int frag;
 			char dataDigest[40]={0,};
 			char swapoutDigest[40]={0,};
 			//Kim Taehee added end
@@ -413,18 +412,17 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
 
 			url = storeUrl(e);
 
-			if(isYouTubeUrl(url)) {
-				strcpy(lmt,getLmtFromUrl(url));
-				startRange = getStartRangeFromUrl(url);
-				endRange = getEndRangeFromUrl(url);
+			if(isDailyMotionUrl(url)) {
+				strcpy(vid,getVidFromUrl(url));
+				frag = getFragFromUrl(url);
 				strcpy(dataDigest,storeKeyText(dataDigestKey));
 				strcpy(swapoutDigest,storeKeyText(e->hash.key));
 
-				insertChunkToYoutubeChunkTable(lmt, startRange,
-						endRange, dataDigest, swapoutDigest);
+				insertChunkToDailyMotionChunkTable(vid, frag,
+						dataDigest, swapoutDigest);
 
-				appendChunkToTableFile(lmt, startRange,
-						endRange, dataDigest, swapoutDigest, e);
+				appendChunkToTableFile(vid, frag,
+						dataDigest, swapoutDigest, e);
 
 			}
 
@@ -445,33 +443,32 @@ storeSwapOutFileClosed(void *data, int errflag, storeIOState * sio)
  * return: lmt matched swapout key. if cannot find, return null.
  */
 const cache_key * getMatchedSwapoutKey(
-		const char* lmt, const int startRange, const int endRange) {
+		const char* vid, const int frag) {
 
 //	static cache_key digest[SQUID_MD5_DIGEST_LENGTH];
 	int i;
-	YoutubeChunk* currNode;
+	DailyMotionChunk* currNode;
 
-	currNode = youtubeTable.head;
+	currNode = dailyMotionTable.head;
 
 	debug(20, 4) ("getMatchedSwapoutKey: called.\n");
-	debug(20, 3) ("getMatchedSwapoutKey: youtube table size: %d\n",youtubeTable.size);
-	debug(20, 4) ("getMatchedSwapoutKey: youtubeTable.head: %p.\n",youtubeTable.head);
+	debug(20, 3) ("getMatchedSwapoutKey: youtube table size: %d\n",dailyMotionTable.size);
+	debug(20, 4) ("getMatchedSwapoutKey: youtubeTable.head: %p.\n",dailyMotionTable.head);
 
-	for(i=0;i<youtubeTable.size;++i) {
+	for(i=0;i<dailyMotionTable.size;++i) {
 		//debug(20, 1) ("getMatchedSwapoutKey: i: %d, currnode addr: %p\n",i,currNode);
 		if(currNode) {
-			if(strcmp(currNode->lmt,lmt)==0
-					&& currNode->startRange == startRange
-					&& currNode->endRange == endRange) {
-				debug(20, 1) ("getMatchedSwapoutKey: matched on i:%d, lmt:%s, range:%d-%d, swapout key: %s\n",
-						i,lmt,startRange,endRange,currNode->swapoutDigest);
+			if(strcmp(currNode->vid,vid)==0
+					&& currNode->frag == frag) {
+				debug(20, 1) ("getMatchedSwapoutKey: matched on i:%d, vid:%s, frag:%d, swapout key: %s\n",
+						i,vid,frag,currNode->swapoutDigest);
 				return storeKeyScan(currNode->swapoutDigest);
 			}
 		}
 
 		currNode = currNode->next;
 	}
-	debug(20, 1) ("getMatchedSwapoutKey: no matched swapout key. lmt:%s, range:%d-%d\n",lmt,startRange,endRange);
+	debug(20, 1) ("getMatchedSwapoutKey: no matched swapout key. vid:%s, frag:%d\n",vid,frag);
 
 	return NULL;
 }
@@ -480,44 +477,44 @@ const cache_key * getMatchedSwapoutKey(
  * Kim Taehee added.
  * desc: this call will be invoked when not duplicated chunk is exist on table.(TCP_MISS)
  */
-void insertChunkToYoutubeChunkTable(char* lmt, int startRange,
-		int endRange, char* dataDigest, char* swapoutDigest) {
+void insertChunkToDailyMotionChunkTable(char* vid, int frag,
+		char* dataDigest, char* swapoutDigest) {
 
 	int i;
-	YoutubeChunk* newNode = (YoutubeChunk*)xmalloc(sizeof(YoutubeChunk));
-	YoutubeChunk* currNode = youtubeTable.head;
+	DailyMotionChunk* newNode = (DailyMotionChunk*)xmalloc(sizeof(DailyMotionChunk));
+	DailyMotionChunk* currNode = dailyMotionTable.head;
 
-	debug(20, 3) ("insertChunkToYoutubeChunkTable: called\n");
-	debug(20, 4) ("insertChunkToYoutubeChunkTable: newnode addr: %p\n",newNode);
-	debug(20, 4) ("getMatchedSwapoutKey: youtubeTable.head: %p.\n",youtubeTable.head);
+	debug(20, 3) ("insertChunkToDailyMotionChunkTable: called\n");
+	debug(20, 4) ("insertChunkToDailyMotionChunkTable: newnode addr: %p\n",newNode);
+	debug(20, 4) ("getMatchedSwapoutKey: dailyMotionTable.head: %p.\n",dailyMotionTable.head);
 
 	//debug(20, 1) ("insertChunkToYoutubeChunkTable: lmt: %s\n",lmt);
-	strcpy(newNode->lmt,lmt);
+	strcpy(newNode->vid,vid);
 	//debug(20, 1) ("insertChunkToYoutubeChunkTable: newNode->lmt: %s\n",newNode->lmt);
-	newNode->startRange = startRange;
-	newNode->endRange = endRange;
+	newNode->frag = frag;
+
 	//debug(20, 1) ("insertChunkToYoutubeChunkTable: dataDigest: %s\n",dataDigest);
 	strcpy(newNode->dataDigest,dataDigest);
-	debug(20, 3) ("insertChunkToYoutubeChunkTable: newNode->dataDigest: %s\n",newNode->dataDigest);
+	debug(20, 3) ("insertChunkToDailyMotionChunkTable: newNode->dataDigest: %s\n",newNode->dataDigest);
 	//debug(20, 1) ("insertChunkToYoutubeChunkTable: swapoutDigest: %s\n",swapoutDigest);
 	strcpy(newNode->swapoutDigest,swapoutDigest);
-	debug(20, 3) ("insertChunkToYoutubeChunkTable: newNode->swapoutDigest: %s\n",newNode->swapoutDigest);
+	debug(20, 3) ("insertChunkToDailyMotionChunkTable: newNode->swapoutDigest: %s\n",newNode->swapoutDigest);
 	newNode->next = NULL;
 
-	for(i=0;i<youtubeTable.size-1;++i) {
+	for(i=0;i<dailyMotionTable.size-1;++i) {
 		currNode = currNode->next;
 		//debug(20, 1) ("insertChunkToYoutubeChunkTable: i: %d, currnode addr: %p\n",i,currNode);
 	}
 
 	//append on end of table
-	if(youtubeTable.size == 0) {
-		youtubeTable.head = newNode;
+	if(dailyMotionTable.size == 0) {
+		dailyMotionTable.head = newNode;
 	} else {
 		currNode->next = newNode;
 	}
-	youtubeTable.size++;
+	dailyMotionTable.size++;
 
-	debug(20, 3) ("insertChunkToYoutubeChunkTable: table size: %d\n",youtubeTable.size);
+	debug(20, 3) ("insertChunkToDailyMotionChunkTable: table size: %d\n",dailyMotionTable.size);
 	//TODO: release mem when app finish
 }
 
@@ -525,7 +522,7 @@ void insertChunkToYoutubeChunkTable(char* lmt, int startRange,
  * Kim Taehee added.
  * desc: write chunk to table file()
  */
-void appendChunkToTableFile(char* lmt, int startRange, int endRange,
+void appendChunkToTableFile(char* vid, int frag,
 		char* dataDigest, char* swapoutDigest, StoreEntry* e) {
 
 	SwapDir *sd;
@@ -534,7 +531,7 @@ void appendChunkToTableFile(char* lmt, int startRange, int endRange,
 	sd = &Config.cacheSwap.swapDirs[e->swap_dirn]; //..../var/cache
 
 	strcpy(tableFilePath, sd->path);
-	strcat(tableFilePath, "/youtubetable.state");
+	strcat(tableFilePath, "/dailymotiontable.state");
 
 	debug(20, 3) ("appendChunkToTableFile: called. dataDigest:%s, swapoutDigest:%s\n",dataDigest,swapoutDigest);
 
@@ -545,7 +542,7 @@ void appendChunkToTableFile(char* lmt, int startRange, int endRange,
 		exit(1);
 	}
 
-	dprintf(fd,"%s,%015d,%015d,%s,%s@\n",lmt,startRange,endRange,dataDigest,swapoutDigest);
+	dprintf(fd,"%s,%012d,%s,%s@\n",vid,frag,dataDigest,swapoutDigest);
 
 	file_close(fd);
 

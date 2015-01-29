@@ -90,10 +90,9 @@ static int storeKeepInMemory(const StoreEntry *);
 static OBJH storeCheckCachableStats;
 static EVH storeLateRelease;
 //Kim Taehee added start
-char* isYouTubeUrl(const char * url);
-char* getLmtFromUrl(const char* url);
-char* getEndRangeFromUrl(const char* url);
-int getStartRangeFromUrl(const char* url);
+char* isDailyMotionUrl(const char * url);
+char* getVidFromUrl(const char* url);
+int getFragFromUrl(const char* url);
 //Kim Taehee added end
 
 
@@ -373,37 +372,22 @@ storeGetPublicByRequestMethod(request_t * req, const method_t method)
 {
 	//Kim Taehee added start
 	char *url;
-	char lmt[20];
-	int startRange;
-	int endRange;
+	char vid[40];
+	int frag;
 	cache_key* digest; //digest[SQUID_MD5_DIGEST_LENGTH];
 	StoreEntry* e;
-	//Kim Taehee added end
 
-
-	if (req->vary) {
-		/* Varying objects... */
-		if (req->vary->key){
-			return storeGet(storeKeyScan(req->vary->key));
-		}
-		else {
-			return NULL;
-		}
-	}
-
-	//Kim Taehee added start
-	//check youtube url
-	if(isYouTubeUrl(req->urlpath.buf)) {
+	//check url
+	if(isDailyMotionUrl(req->urlpath.buf)) {
 		url = req->urlpath.buf;
 
-		strcpy(lmt, getLmtFromUrl(url));
-		startRange = getStartRangeFromUrl(url);
-		endRange = getEndRangeFromUrl(url);
+		strcpy(vid, getVidFromUrl(url));
+		frag = getFragFromUrl(url);
 
-		digest = getMatchedSwapoutKey(lmt,startRange,endRange);
+		digest = getMatchedSwapoutKey(vid,frag);
 		if(digest) {
-			debug(20, 4) ("storeGetPublicByRequestMethod: digest on table: %s by lmt: %s, range: %d-%d\n",
-					storeKeyText(digest),lmt,startRange,endRange);
+			debug(20, 4) ("storeGetPublicByRequestMethod: digest on table: %s by vid: %s, frag: %d\n",
+					storeKeyText(digest),vid,frag);
 			e = storeGet(digest);
 
 			if (!e) {
@@ -418,58 +402,62 @@ storeGetPublicByRequestMethod(request_t * req, const method_t method)
 		//check
 	}
 
-
-//	if(hittingState) {
-//		debug(20, 1) ("storeGetPublicByRequestMethod: cachekey: %s\n", dataDigest[hittingOffset][1]);
-//		StoreEntry* e = storeGet(storeKeyScan(dataDigest[hittingOffset][1]));
-//		if(e && isLmtMatch(req->urlpath.buf)) {
-//			debug(20, 1) ("storeGetPublicByRequestMethod: found chunk!\n");
-//			hittingOffset++;
-//			if(hittingOffset==numOfchunks) {
-//				hittingState = 0;
-//				hittingOffset = 0;
-//			}
-//		} else {
-//			debug(20, 1) ("storeGetPublicByRequestMethod: cannot find chunk or not streaming!\n");
-//			return storeGet(storeKeyPublicByRequestMethod(req, method));
-//		}
-//		return e;
-//	}
 	//Kim Taehee added end
+
+	if (req->vary) {
+		/* Varying objects... */
+		if (req->vary->key){
+			return storeGet(storeKeyScan(req->vary->key));
+		}
+		else {
+			return NULL;
+		}
+	}
 
 	return storeGet(storeKeyPublicByRequestMethod(req, method));
 }
 
 //Kim Taehee added start
-char* isYouTubeUrl(const char * url) {
-	char* ptr = strstr(url,"/videoplayback?");
-	return ptr;
+char* isDailyMotionUrl(const char * url) {
+	char* ptr1 = strstr(url,"/sec(");
+	char* ptr2 = strstr(url,"frag(");
+	char* result = NULL;
+
+
+	//debug(20, 1) ("isDailyMotionUrl: url:%s\n",url);
+	//debug(20, 1) ("isDailyMotionUrl: ptr1:%p, ptr2:%p\n",ptr1,ptr2);
+
+	result = ptr1 && ptr2; //TODO: test
+
+	//debug(20, 1) ("isDailyMotionUrl: result:%p\n",result);
+
+	return result;
 
 }
 
-char* getLmtFromUrl(const char* url) {
-	char* ptr = strstr(url,"lmt=");
-	static char result[20];
+char* getVidFromUrl(const char* url) {
+	char* ptr = strstr(url,"sec(");
+	static char result[40];
 	int i;
 
-	memset(result,0,20); //init
+	memset(result,0,40); //init
 
 	if(!ptr) {
-		debug(20, 3) ("getLmtFromUrl: cannot find lmt in url\n");
+		debug(20, 3) ("getVidFromUrl: cannot find vid in url\n");
 		return NULL;
 	}
 
-	ptr+=4; //move offset to begin of lmt
-	for(i=0; *(ptr+i)!='&'; ++i) {
+	ptr+=4; //move offset to begin of vid
+	for(i=0; *(ptr+i)!=')'; ++i) {
 		result[i] = *(ptr+i);
 	}
-	debug(20, 3) ("getLmtFromUrl: lmt parsed: %s\n",result);
+	debug(20, 3) ("getVidFromUrl: vid parsed: %s\n",result);
 
 	return result;
 }
 
-int getStartRangeFromUrl(const char* url) {
-	char* ptr = strstr(url,"&range=");
+int getFragFromUrl(const char* url) {
+	char* ptr = strstr(url,"/frag(");
 	char resultStr[30];
 	int result;
 	int i;
@@ -477,51 +465,21 @@ int getStartRangeFromUrl(const char* url) {
 	memset(resultStr,0,30); //init
 
 	if(!ptr) {
-		debug(20, 3) ("getStartRangeFromUrl: cannot find\n");
+		debug(20, 3) ("getFragFromUrl: cannot find\n");
 		return NULL;
 	}
 
-	ptr+=7; //move offset to begin of start range
-	for(i=0; *(ptr+i)!='-'; ++i) {
+	ptr+=6; //move offset to begin of start range
+	for(i=0; *(ptr+i)!=')'; ++i) {
 		resultStr[i] = *(ptr+i);
 	}
 	//debug(20, 1) ("getStartRangeFromUrl: rangeStr[0]: %d\n",resultStr[0]);
 	//debug(20, 1) ("getStartRangeFromUrl: rangeStr[1]: %d\n",resultStr[1]);
 	result = atoi(resultStr);
-	debug(20, 3) ("getStartRangeFromUrl: range parsed: %d\n",result);
+	debug(20, 3) ("getFragFromUrl: frag parsed: %d\n",result);
 
 	return result;
 }
-
-char* getEndRangeFromUrl(const char* url) {
-	char* ptr = strstr(url,"&range=");
-	char resultStr[30];
-	int result;
-	int i;
-
-	//debug(20, 1) ("getEndRangeFromUrl: called\n");
-	memset(resultStr,0,30); //init
-
-	if(!ptr) {
-		debug(20, 3) ("getEndRangeFromUrl: cannot find\n");
-		return NULL;
-	}
-
-	ptr+=7; //move offset to begin of start range
-	for(; *ptr!='-'; ptr++);
-
-	ptr+=1; //move offset to begin of end range
-	for(i=0; 48<=*(ptr+i) && *(ptr+i)<=57; ++i) {	//only count number
-		resultStr[i] = *(ptr+i);
-	}
-
-	result = atoi(resultStr);
-	debug(20, 3) ("getEndRangeFromUrl: range parsed: %d\n",result);
-
-	return result;
-}
-
-
 
 //Kim Taehee added end
 

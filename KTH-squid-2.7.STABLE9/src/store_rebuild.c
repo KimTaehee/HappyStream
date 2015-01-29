@@ -232,6 +232,7 @@ void readChunkFromTableFile() {
 
 	debug(20, 1) ("readChunkFromTableFile: done. table size:%d\n",youtubeTable.size);
 
+	file_close(fd);
 }
 
 /*

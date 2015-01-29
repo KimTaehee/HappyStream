@@ -79,7 +79,7 @@ CCDEPMODE = depmode=gcc3
 CFLAGS = -Wall -g -O2
 CGIEXT = .cgi
 CPP = gcc -E
-CPPFLAGS = 
+CPPFLAGS =   
 CRYPTLIB = -lcrypt 
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
@@ -142,7 +142,7 @@ SET_MAKE =
 SH = /bin/sh
 SHELL = /bin/bash
 SNMPLIB = 
-SSLLIB = 
+SSLLIB = -lssl -lcrypto  
 STORE_LIBS = libufs.a
 STORE_MODULES = ufs
 STORE_OBJS = fs/libufs.a

@@ -446,10 +446,12 @@ sslCreateServerContext(const char *certfile, const char *keyfile, int version, c
     ERR_clear_error();
     debug(83, 1) ("Initialising SSL.\n");
     switch (version) {
+#ifndef OPENSSL_NO_SSL2 //Kim Taehee added
     case 2:
 	debug(83, 5) ("Using SSLv2.\n");
 	method = SSLv2_server_method();
 	break;
+#endif //Kim Taehee added
     case 3:
 	debug(83, 5) ("Using SSLv3.\n");
 	method = SSLv3_server_method();
@@ -609,10 +611,12 @@ sslCreateClientContext(const char *certfile, const char *keyfile, int version, c
     ERR_clear_error();
     debug(83, 1) ("Initialising SSL.\n");
     switch (version) {
+#ifndef OPENSSL_NO_SSL2 //Kim Taehee added
     case 2:
 	debug(83, 5) ("Using SSLv2.\n");
 	method = SSLv2_client_method();
 	break;
+#endif //Kim Taehee added
     case 3:
 	debug(83, 5) ("Using SSLv3.\n");
 	method = SSLv3_client_method();

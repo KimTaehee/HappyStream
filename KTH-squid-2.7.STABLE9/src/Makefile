@@ -128,7 +128,7 @@ am__objects_5 = ipc.$(OBJEXT)
 #am__objects_6 = leakfinder.$(OBJEXT)
 #am__objects_7 = snmp_core.$(OBJEXT) \
 #	snmp_agent.$(OBJEXT)
-#am__objects_8 = ssl_support.$(OBJEXT)
+am__objects_8 = ssl_support.$(OBJEXT)
 am__objects_9 = unlinkd.$(OBJEXT)
 #am__objects_10 = win32.$(OBJEXT)
 am_squid_OBJECTS = access_log.$(OBJEXT) acl.$(OBJEXT) asn.$(OBJEXT) \
@@ -235,7 +235,7 @@ CCDEPMODE = depmode=gcc3
 CFLAGS = -Wall -g -O2
 CGIEXT = .cgi
 CPP = gcc -E
-CPPFLAGS = 
+CPPFLAGS =   
 CRYPTLIB = -lcrypt 
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H -DDEFAULT_CONFIG_FILE=\"$(DEFAULT_CONFIG_FILE)\"
@@ -298,7 +298,7 @@ SET_MAKE =
 SH = /bin/sh
 SHELL = /bin/bash
 SNMPLIB = 
-SSLLIB = 
+SSLLIB = -lssl -lcrypto  
 STORE_LIBS = libufs.a
 STORE_MODULES = ufs
 STORE_OBJS = fs/libufs.a
@@ -377,8 +377,8 @@ UNLINKD = unlinkd
 LOGFILED = logfile-daemon
 PINGER = 
 #PINGER = pinger
-SSLSOURCE = 
-#SSLSOURCE = ssl_support.c
+#SSLSOURCE = 
+SSLSOURCE = ssl_support.c
 WIN32SOURCE = 
 #WIN32SOURCE = win32.c
 MINGWEXLIB = 
@@ -556,7 +556,7 @@ squid_LDADD = \
 	 \
 	 \
 	 \
-	 \
+	-lssl -lcrypto   \
 	 \
 	-lmiscutil \
 	-lm \

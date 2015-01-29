@@ -20,13 +20,9 @@ rfc2617.o: rfc2617.c ../include/config.h ../include/autoconf.h \
  /usr/include/i386-linux-gnu/bits/time.h \
  /usr/include/i386-linux-gnu/bits/select2.h \
  /usr/include/i386-linux-gnu/sys/sysmacros.h \
- /usr/include/i386-linux-gnu/bits/pthreadtypes.h ../include/squid_types.h \
- /usr/include/i386-linux-gnu/bits/waitflags.h \
- /usr/include/i386-linux-gnu/bits/waitstatus.h /usr/include/alloca.h \
- /usr/include/i386-linux-gnu/bits/stdlib.h /usr/include/inttypes.h \
- /usr/lib/gcc/i686-linux-gnu/4.6/include/stdint.h /usr/include/stdint.h \
- /usr/include/i386-linux-gnu/bits/wchar.h \
- /usr/include/i386-linux-gnu/sys/bitypes.h
+ /usr/include/i386-linux-gnu/bits/pthreadtypes.h \
+ /usr/include/openssl/md5.h /usr/include/openssl/e_os2.h \
+ /usr/include/openssl/opensslconf.h
 
 ../include/config.h:
 
@@ -92,22 +88,8 @@ rfc2617.o: rfc2617.c ../include/config.h ../include/autoconf.h \
 
 /usr/include/i386-linux-gnu/bits/pthreadtypes.h:
 
-../include/squid_types.h:
+/usr/include/openssl/md5.h:
 
-/usr/include/i386-linux-gnu/bits/waitflags.h:
+/usr/include/openssl/e_os2.h:
 
-/usr/include/i386-linux-gnu/bits/waitstatus.h:
-
-/usr/include/alloca.h:
-
-/usr/include/i386-linux-gnu/bits/stdlib.h:
-
-/usr/include/inttypes.h:
-
-/usr/lib/gcc/i686-linux-gnu/4.6/include/stdint.h:
-
-/usr/include/stdint.h:
-
-/usr/include/i386-linux-gnu/bits/wchar.h:
-
-/usr/include/i386-linux-gnu/sys/bitypes.h:
+/usr/include/openssl/opensslconf.h:

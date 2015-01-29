@@ -914,9 +914,6 @@ icp_access deny all
 # -----------------------------------------------------------------------------
 
 #  TAG: ssl_unclean_shutdown
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	Some browsers (especially MSIE) bugs out on SSL shutdown
 #	messages.
 #
@@ -924,9 +921,6 @@ icp_access deny all
 # ssl_unclean_shutdown off
 
 #  TAG: ssl_engine
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	The OpenSSL engine to use. You will need to set this if you
 #	would like to use hardware SSL acceleration for example.
 #
@@ -934,54 +928,36 @@ icp_access deny all
 # none
 
 #  TAG: sslproxy_client_certificate
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	Client SSL Certificate to use when proxying https:// URLs
 #
 #Default:
 # none
 
 #  TAG: sslproxy_client_key
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	Client SSL Key to use when proxying https:// URLs
 #
 #Default:
 # none
 
 #  TAG: sslproxy_version
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	SSL version level to use when proxying https:// URLs
 #
 #Default:
 # sslproxy_version 1
 
 #  TAG: sslproxy_options
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	SSL engine options to use when proxying https:// URLs
 #
 #Default:
 # none
 
 #  TAG: sslproxy_cipher
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	SSL cipher list to use when proxying https:// URLs
 #
 #Default:
 # none
 
 #  TAG: sslproxy_cafile
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	file containing CA certificates to use when verifying server
 #	certificates while proxying https:// URLs
 #
@@ -989,9 +965,6 @@ icp_access deny all
 # none
 
 #  TAG: sslproxy_capath
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	directory containing CA certificates to use when verifying
 #	server certificates while proxying https:// URLs
 #
@@ -999,9 +972,6 @@ icp_access deny all
 # none
 
 #  TAG: sslproxy_flags
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	Various flags modifying the use of SSL while proxying https:// URLs:
 #	    DONT_VERIFY_PEER    Accept certificates even if they fail to
 #				verify.
@@ -1012,9 +982,6 @@ icp_access deny all
 # none
 
 #  TAG: sslpassword_program
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	Specify a program used for entering SSL key passphrases
 #	when using encrypted SSL certificate keys. If not specified
 #	keys must either be unencrypted, or Squid started with the -N
@@ -1122,9 +1089,6 @@ icp_access deny all
 http_port 3128
 
 #  TAG: https_port
-# Note: This option is only available if Squid is rebuilt with the
-#       --enable-ssl option
-#
 #	Usage:  [ip:]port cert=certificate.pem [key=key.pem] [options...]
 #
 #	The socket address where Squid will listen for HTTPS client

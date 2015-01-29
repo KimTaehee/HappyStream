@@ -308,16 +308,16 @@
 #define HAVE_NSS_H 1
 
 /* Define to 1 if you have the <openssl/engine.h> header file. */
-/* #undef HAVE_OPENSSL_ENGINE_H */
+#define HAVE_OPENSSL_ENGINE_H 1
 
 /* Define to 1 if you have the <openssl/err.h> header file. */
-/* #undef HAVE_OPENSSL_ERR_H */
+#define HAVE_OPENSSL_ERR_H 1
 
 /* Define to 1 if you have the <openssl/md5.h> header file. */
-/* #undef HAVE_OPENSSL_MD5_H */
+#define HAVE_OPENSSL_MD5_H 1
 
 /* Define to 1 if you have the <openssl/ssl.h> header file. */
-/* #undef HAVE_OPENSSL_SSL_H */
+#define HAVE_OPENSSL_SSL_H 1
 
 /* Define to 1 if you have the <paths.h> header file. */
 #define HAVE_PATHS_H 1
@@ -734,7 +734,7 @@
 #define SIZEOF___INT64 0
 
 /* configure command line used to configure Squid */
-#define SQUID_CONFIGURE_OPTIONS " '--prefix=/home/slhyvaa/squid-2.7.STABLE9'"
+#define SQUID_CONFIGURE_OPTIONS " '--prefix=/home/slhyvaa/squid-2.7.STABLE9' '--with-openssl=/usr' '--enable-ssl'"
 
 /* Maximum number of open filedescriptors */
 #define SQUID_MAXFD 4096
@@ -814,7 +814,7 @@
 /* Define this to make use of the OpenSSL libraries for MD5 calculation rather
    than Squid's own MD5 implementation or if building with SSL encryption
    (USE_SSL) */
-/* #undef USE_OPENSSL */
+#define USE_OPENSSL 1
 
 /* If you want to log Referer request header values, define this. By default,
    they are written to referer.log in the Squid log directory. */
@@ -824,7 +824,7 @@
 /* #undef USE_SQUID_MD5 */
 
 /* Define this to include code for SSL encryption. */
-/* #undef USE_SSL */
+#define USE_SSL 1
 
 /* Do we want to use truncate(2) or unlink(2)? */
 /* #undef USE_TRUNCATE */

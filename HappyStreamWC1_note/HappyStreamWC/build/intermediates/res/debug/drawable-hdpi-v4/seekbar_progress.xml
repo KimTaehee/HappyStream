@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+
+        <color android:color="#6Ad8d8d8"/>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <color android:color="#FFFFFF"/>
+        </clip>
+    </item>
+</layer-list><!-- From: file:/C:/AndroidProject/HappyStreamWC1_note/HappyStreamWC/src/main/res/drawable-hdpi/seekbar_progress.xml -->

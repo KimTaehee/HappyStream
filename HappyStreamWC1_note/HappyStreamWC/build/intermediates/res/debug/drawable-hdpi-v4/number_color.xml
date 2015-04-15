@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <color android:color="#6a858585"/>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <color android:color="#ffffffff"/>
+        </clip>
+    </item>
+</layer-list><!-- From: file:/C:/AndroidProject/HappyStreamWC1_note/HappyStreamWC/src/main/res/drawable-hdpi/number_color.xml -->

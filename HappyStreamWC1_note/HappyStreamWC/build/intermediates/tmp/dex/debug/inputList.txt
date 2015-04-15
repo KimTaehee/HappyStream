@@ -1,0 +1,2 @@
+C:\AndroidProject\HappyStreamWC1_note\HappyStreamWC\build\intermediates\classes\debug
+C:\AndroidProject\HappyStreamWC1_note\HappyStreamWC\build\intermediates\pre-dexed\debug\support-v4-18.0.0-b78039c7ca11996f6ad7c1617133ff27531bb56c.jar

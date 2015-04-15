@@ -1,0 +1,76 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.sec.kbssm.happystream.ManualOperationActivity" >
+
+    <Button
+        android:id="@+id/manual_operation_btn_copy_squid_from_assets"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:text="copy squid from assets" />
+    
+    <Button
+        android:id="@+id/manual_operation_btn_set_iptables"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="80dp"
+        android:text="set iptables" />
+    
+    <Button
+        android:id="@+id/manual_operation_btn_untar_squid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="150dp"
+        android:text="tar xvf squid" />
+    
+    <Button
+        android:id="@+id/manual_operation_btn_squid_k_parse"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="220dp"
+        android:text="squid -k parse" />
+
+    <Button
+        android:id="@+id/manual_operation_btn_squid_z"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="290dp"
+        android:text="squid -z" />
+
+    <Button
+        android:id="@+id/manual_operation_btn_squid_reconfigure"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_below="@+id/manual_operation_btn_squid_z"
+        android:layout_marginTop="360dp"
+        android:layout_centerHorizontal="true"
+        android:text="reconfigure"/>
+    <Button
+        android:id="@+id/manual_operation_btn_squid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="squid -DNCd1"
+        android:layout_below="@+id/manual_operation_btn_squid_reconfigure"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="430dp"
+        android:layout_centerHorizontal="true"/>
+
+
+</RelativeLayout>

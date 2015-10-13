@@ -1,12 +1,12 @@
 # No more data charge. Just reuse.
 
-**HappyStream** is an Open Source Application that does **global cache**.
-Just turn on the **HappyStream**, and enjoy reduced network traffic.
+**HappyStream** is an Open Source Application that does global cache.
+Just turn on the HappyStream, and enjoy reduced network traffic.
 
-# Feature
+## Feature
 
-`HappyStream` provides a global HTTP caching using ### [**Squid**](http://www.squid-cache.org/).
-`HappyStream` need a root permission.
+HappyStream provides a global HTTP caching using [Squid](http://www.squid-cache.org/).
+It also need a root permission.
 
 ## License
 

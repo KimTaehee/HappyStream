@@ -6,7 +6,7 @@ Just turn on the HappyStream, and enjoy reduced network traffic.
 ## Feature
 
 HappyStream provides a global HTTP caching using [Squid](http://www.squid-cache.org/).
-It also need a root permission.
+It need a root permission.
 
 ## License
 

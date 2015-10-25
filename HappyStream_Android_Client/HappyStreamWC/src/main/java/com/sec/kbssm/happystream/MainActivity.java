@@ -149,10 +149,6 @@ public class MainActivity extends Activity implements OnClickListener {
 
         }
 
-        //set global application path
-        Common.applicationPath =  this.getFilesDir().getPath();
-        Log.v(TAG, "applicationPath set: " + Common.applicationPath);
-
         //call service
         Common.isSquidRunning = false;
         Intent serviceStartIntent = new Intent(this, RunningCheckService.class);

@@ -5,5 +5,4 @@ package com.sec.kbssm.happystream;
  */
 public final class Common {
     public static boolean isSquidRunning = false;
-    public static String applicationPath = null;
 }

@@ -9,8 +9,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -18,7 +16,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.ViewParent;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
@@ -35,6 +32,8 @@ import java.util.StringTokenizer;
 
 
 public class MainActivity extends Activity implements OnClickListener {
+    private static final String TAG = MainActivity.class.getSimpleName();
+    
     //private RelativeLayout mLayoutOnoff;
     private TextView mTvAccessLog;
     private TextView mTvSaveRatio;
@@ -50,7 +49,6 @@ public class MainActivity extends Activity implements OnClickListener {
     //	private Scanner mSc = null;
     //private LogMonitoringAsyncTask mLogMonitor;
     DrawGraph drawGraph;
-    ExcuteShell shell;
 
     private NotificationManager nm = null;
 
@@ -74,20 +72,20 @@ public class MainActivity extends Activity implements OnClickListener {
             switch(data.getInt(ACTION_KEY_TYPE)) {
 
                 case ACTION_TYPE_SETTEXT_SAVE_RATIO:
-                    Log.d("User Logged","ACTION_TYPE_SETTEXT_SAVE_RATIO");
+                    Log.d(TAG,"ACTION_TYPE_SETTEXT_SAVE_RATIO");
                     mTvSaveRatio.setText(data.getString(ACTION_KEY_VALUE));
 
                     break;
                 case ACTION_TYPE_SETTEXT_SAVE_STATUS:
-                    Log.d("User Logged","ACTION_TYPE_SETTEXT_SAVE_STATUS");
+                    Log.d(TAG,"ACTION_TYPE_SETTEXT_SAVE_STATUS");
                     mTvSaveStatus.setText(data.getString(ACTION_KEY_VALUE));
                     break;
                 case ACTION_TYPE_SETTEXT_CACHE_RATIO:
-                    Log.d("User Logged","ACTION_TYPE_SETTEXT_CACHE_RATIO");
+                    Log.d(TAG,"ACTION_TYPE_SETTEXT_CACHE_RATIO");
                     mTvCacheRatio.setText(data.getString(ACTION_KEY_VALUE));
                     break;
                 case ACTION_TYPE_SETTEXT_CACHE_STATUS:
-                    Log.d("User Logged","ACTION_TYPE_SETTEXT_CACHE_STATUS");
+                    Log.d(TAG,"ACTION_TYPE_SETTEXT_CACHE_STATUS");
                     mTvCacheStatus.setText(data.getString(ACTION_KEY_VALUE));
                     break;
 
@@ -105,7 +103,6 @@ public class MainActivity extends Activity implements OnClickListener {
         LinearLayout layBody = (LinearLayout) inflater.inflate(R.layout.activity_main, null);
         LinearLayout infoview = (LinearLayout) layBody.findViewById(R.id.lay_arc);
         drawGraph = new DrawGraph(this);
-        shell = new ExcuteShell(this);
         infoview.addView(drawGraph);
         setContentView(layBody);
 
@@ -135,14 +132,14 @@ public class MainActivity extends Activity implements OnClickListener {
 
         if(pref.getString("file", "").equals("on")){
 
-            Log.d("User Logged","dir_size : " + pref.getString("dir_size", ""));
+            Log.d(TAG,"dir_size : " + pref.getString("dir_size", ""));
             seekbar.setProgress(Integer.parseInt(pref.getString("dir_size", ""))-50);//-50?
             cache_dir_size.setText(pref.getString("dir_size", ""));
             backup_size = Integer.parseInt(pref.getString("dir_size", ""));
 
         }else{
             //없는 거기 때문에 conf 파일에서 내용을 읽어와야함... 근데 이건 내가 알고 있는 값이니까 값을 줘도 될 것 같아.
-            Log.d("User Logged","dir_size input : " + 500);
+            Log.d(TAG,"dir_size input : " + 500);
             resize = 500;
             backup_size = 500;
             editor.putString("dir_size", "500");
@@ -152,6 +149,15 @@ public class MainActivity extends Activity implements OnClickListener {
 
         }
 
+        //set global application path
+        Common.applicationPath =  this.getFilesDir().getPath();
+        Log.v(TAG, "applicationPath set: " + Common.applicationPath);
+
+        //call service
+        Common.isSquidRunning = false;
+        Intent serviceStartIntent = new Intent(this, RunningCheckService.class);
+        startService(serviceStartIntent);
+        Log.v(TAG, "start service");
 
         //mLayoutOnoff = (RelativeLayout) findViewById(R.id.main_layout_onoff);
         //mLayoutOnoff.setOnClickListener(this);
@@ -160,20 +166,20 @@ public class MainActivity extends Activity implements OnClickListener {
         seekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                Log.d("User Logged","seekbar change start : " + i);
+                Log.d(TAG,"seekbar change start : " + i);
                 resize = i+50;
                 cache_dir_size.setText(""+resize);
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-                Log.d("User Logged","seekbar touch start");
+                Log.d(TAG,"seekbar touch start");
 
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                Log.d("User Logged","seekbar touch end");
+                Log.d(TAG,"seekbar touch end");
                 openAlert_Progress();
             }
         });
@@ -183,15 +189,15 @@ public class MainActivity extends Activity implements OnClickListener {
     }
     //checkFileExist
     private void checkFileExist(){
-        Log.d("User Logged", "preference start");
+        Log.d(TAG, "preference start");
         //SharedPreferences pref = getSharedPreferences("pref", MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
 
         if(!pref.getString("file", "").equals("on")){
             //이미 깔려있지 않으면 파일을 복사하고, 압축을 해제해 준다.
-            Log.v("User logged", "test file exist ...File is : "+ pref.getString("file", ""));
-            Log.v("User logged", "manual_operation_btn_copy_squid_from_assets");
-            Log.v("User logged", "this.getFilesDir().getPath() : " + this.getFilesDir().getPath());
+            Log.v(TAG, "test file exist ...File is : "+ pref.getString("file", ""));
+            Log.v(TAG, "manual_operation_btn_copy_squid_from_assets");
+            Log.v(TAG, "this.getFilesDir().getPath() : " + this.getFilesDir().getPath());
             copyFile("zero", this.getFilesDir().getPath() + "/zero", this);
             copyFile("squid.tar", this.getFilesDir().getPath() + "/squid.tar", this);
             copyFile("setip.sh", this.getFilesDir().getPath() + "/setip.sh", this);
@@ -201,23 +207,25 @@ public class MainActivity extends Activity implements OnClickListener {
             copyFile("logbackup.sh", this.getFilesDir().getPath() + "/logbackup.sh", this);
             copyFile("resize_squid.sh", this.getFilesDir().getPath() + "/resize_squid.sh", this);
             copyFile("killserver.sh", this.getFilesDir().getPath() + "/killserver.sh", this);
+            copyFile("cleancache.sh", this.getFilesDir().getPath() + "/cleancache.sh", this);
+            copyFile("pssquid.sh", this.getFilesDir().getPath() + "/pssquid.sh", this);
             try {
-                Log.i("User Logged",shell.run("chmod -R 775 " + this.getFilesDir().getPath()));
+                Log.i(TAG, ExecuteShell.run("chmod -R 775 " + this.getFilesDir().getPath()));
 
             } catch (Exception e) {
-                Log.e("User Logged", e.getMessage());
+                Log.e(TAG, e.getMessage());
                 e.printStackTrace();
             }
 
-            Log.v("User logged", "manual_operation_btn_untar_squid");
+            Log.v(TAG, "manual_operation_btn_untar_squid");
             try {
                //result =
-                Log.i("User Logged",shell.run("busybox tar xvf " + this.getFilesDir().getPath() + "/squid.tar -C " + this.getFilesDir().getPath()));
+                Log.i(TAG, ExecuteShell.run("busybox tar xvf " + this.getFilesDir().getPath() + "/squid.tar -C " + this.getFilesDir().getPath()));
                 //result =
-                Log.i("User Logged",shell.run("chmod -R 775 " + this.getFilesDir().getPath()));
+                Log.i(TAG, ExecuteShell.run("chmod -R 775 " + this.getFilesDir().getPath()));
 
             } catch (Exception e) {
-                Log.e("User Logged", e.getMessage());
+                Log.e(TAG, e.getMessage());
                 e.printStackTrace();
             }
 
@@ -225,7 +233,7 @@ public class MainActivity extends Activity implements OnClickListener {
             editor.commit();
 
         }
-        Log.d("User Logged","preference end");
+        Log.d(TAG,"preference end");
 
     }
 
@@ -250,7 +258,7 @@ public class MainActivity extends Activity implements OnClickListener {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.v("User logged", "onResume() invoked. execute thread.");
+        Log.v(TAG, "onResume() invoked. execute thread.");
 
         ReadAccesslog();
         //mLogMonitor = new LogMonitoringAsyncTask();
@@ -261,19 +269,19 @@ public class MainActivity extends Activity implements OnClickListener {
     @Override
     protected void onPause() {
         super.onPause();
-        Log.v("User logged", "onPause() invoked. stop running thread.");
+        Log.v(TAG, "onPause() invoked. stop running thread.");
         //boolean result = mLogMonitor.cancel(true);
-        //Log.d("User logged", "mLogMonitor.cancel(true) result: " + result);
+        //Log.d(TAG, "mLogMonitor.cancel(true) result: " + result);
 
     }
 
     @Override
     public void onClick(View v) {
-        Log.v("User logged", "onClick() invoked.");
+        Log.v(TAG, "onClick() invoked.");
         switch(v.getId()){
             case R.id.switch_server_on :
 
-                shell.killServer(this.getFilesDir().getPath());
+                ExecuteShell.killServer(this.getFilesDir().getPath());
                 onBtn.setVisibility(View.INVISIBLE);
                 offBtn.setVisibility(View.VISIBLE);
                 server_switch = false;
@@ -283,7 +291,7 @@ public class MainActivity extends Activity implements OnClickListener {
 
             case R.id.switch_server_off :
 
-                shell.runServer(this.getFilesDir().getPath());
+                ExecuteShell.runServer(this.getFilesDir().getPath());
                 offBtn.setVisibility(View.INVISIBLE);
                 onBtn.setVisibility(View.VISIBLE);
                 server_switch = true;
@@ -299,7 +307,7 @@ public class MainActivity extends Activity implements OnClickListener {
                     //
                     openAlert_CleanCache();
                     if(alert){
-                        shell.cleanCache(this.getFilesDir().getPath());
+                        ExecuteShell.cleanCache(this.getFilesDir().getPath());
                         Toast.makeText(getApplicationContext(), "캐쉬를 비웠습니다.", Toast.LENGTH_SHORT).show();
                     }
 
@@ -307,7 +315,7 @@ public class MainActivity extends Activity implements OnClickListener {
 
                 break;
             case R.id.clean_cache_gray :
-                Log.v("User logged", "onClick() : cache_gray btn Pressed");
+                Log.v(TAG, "onClick() : cache_gray btn Pressed");
                 Toast.makeText(getApplicationContext(), "서버가 켜져 있는 동안은 캐쉬를 지울 수 없습니다.", Toast.LENGTH_SHORT).show();
                 break;
         }
@@ -319,12 +327,12 @@ public class MainActivity extends Activity implements OnClickListener {
         super.onDestroy();
         //SharedPreferences pref = getSharedPreferences("pref", MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
-        Log.v("User logged", "In onDestroy ..put dir_size -> "+ resize);
+        Log.v(TAG, "In onDestroy ..put dir_size -> "+ resize);
         editor.putString("dir_size", ""+resize);
         editor.commit();
 
         if(server_switch)
-            shell.killServer(this.getFilesDir().getPath());
+            ExecuteShell.killServer(this.getFilesDir().getPath());
         nm.cancel(100);
     }
 
@@ -349,7 +357,7 @@ public class MainActivity extends Activity implements OnClickListener {
         int maxCacheBytes = 0;
         int current_currCacheBytes = 0;
 
-        Log.v("User Logged", "in ReadAccesslog()");
+        Log.v(TAG, "in ReadAccesslog()");
         mHitBytes = 0;
         mMissBytes = 0;
 
@@ -362,11 +370,11 @@ public class MainActivity extends Activity implements OnClickListener {
 
             sb = new StringBuilder();
             String line;// = br.readLine();
-            //Log.v("User Logged",line);
+            //Log.v(TAG,line);
 
             int uiUpdateLineCnt = 0;
             while ((line = br. readLine()) != null) {
-                //Log.v("User Logged", "line read completed: line: " + line);
+                //Log.v(TAG, "line read completed: line: " + line);
                 sb.append(line);
                 sb.append(System.getProperty("line.separator"));
 
@@ -376,7 +384,7 @@ public class MainActivity extends Activity implements OnClickListener {
                 String substring = line.substring(idxOfLastQuote);
 
                 StringTokenizer st = new StringTokenizer(substring);
-                //Log.v("User Logged", "substring: " + substring);
+                //Log.v(TAG, "substring: " + substring);
                 int cnt = 0;
                 String currState = null;
                 int currBytes = 0;
@@ -385,10 +393,10 @@ public class MainActivity extends Activity implements OnClickListener {
 
                     if(cnt==2) {
                         currBytes = Integer.parseInt(token);
-                        //Log.v("User Logged", "currBytes : " + currBytes);
+                        //Log.v(TAG, "currBytes : " + currBytes);
                     } else if(cnt==3) {
                         currState = token;
-                        //Log.v("User Logged", "currState : " + currState);
+                        //Log.v(TAG, "currState : " + currState);
                     }
                     cnt++;
                 }
@@ -400,7 +408,7 @@ public class MainActivity extends Activity implements OnClickListener {
 
                 //uiUpdateLineCnt++;
                 //if(uiUpdateLineCnt % 10 == 0) {
-                    //Log.v("User Logged", "uiUpdateLineCnt: " + uiUpdateLineCnt);
+                    //Log.v(TAG, "uiUpdateLineCnt: " + uiUpdateLineCnt);
                     //print result on ui
                     //String result
 
@@ -416,8 +424,8 @@ public class MainActivity extends Activity implements OnClickListener {
                     current_mMissBytes = mMissBytes;
                 }
                 //sendActionMsg(ACTION_TYPE_SETTEXT_LOG, sb.toString());
-                Log.v("User Logged", "current_mHitBytes : " + current_mHitBytes + "current_mMissBytes : " + current_mMissBytes);
-                Log.v("User Logged", "mHitBytes : " + mHitBytes + "mMissBytes : " + mMissBytes);
+                Log.v(TAG, "current_mHitBytes : " + current_mHitBytes + "current_mMissBytes : " + current_mMissBytes);
+                Log.v(TAG, "mHitBytes : " + mHitBytes + "mMissBytes : " + mMissBytes);
                 int saveRatio = (int) ((double) current_mHitBytes / ((double) current_mHitBytes + (double) current_mMissBytes) * 100.0);
                 sendActionMsg(ACTION_TYPE_SETTEXT_SAVE_RATIO, "" + saveRatio + "%");
                 sendActionMsg(ACTION_TYPE_SETTEXT_SAVE_STATUS,
@@ -426,11 +434,11 @@ public class MainActivity extends Activity implements OnClickListener {
             }
 
             int currCacheBytes = Integer.parseInt(result.substring(0, result.indexOf('\t'))) * 1000;
-            Log.v("User Logged", "maxCacheBytes : " + maxCacheBytes + "current_currCacheBytes : " + current_currCacheBytes);
+            Log.v(TAG, "maxCacheBytes : " + maxCacheBytes + "current_currCacheBytes : " + current_currCacheBytes);
             if(maxCacheBytes != backup_size || current_currCacheBytes != currCacheBytes) {
 
-                //Log.i("User Logged", "cache size du: " + currCacheBytes);
-                //Log.i("User Logged", "current_maxCacheBytes : " + maxCacheBytes);
+                //Log.i(TAG, "cache size du: " + currCacheBytes);
+                //Log.i(TAG, "current_maxCacheBytes : " + maxCacheBytes);
 
                 if(maxCacheBytes != backup_size) {
                     maxCacheBytes = backup_size;
@@ -442,20 +450,20 @@ public class MainActivity extends Activity implements OnClickListener {
                 sendActionMsg(ACTION_TYPE_SETTEXT_CACHE_RATIO, "" + (int) (((double) current_currCacheBytes / (double) maxCacheBytes)) / 10000 + "%");//* 100.0
                 sendActionMsg(ACTION_TYPE_SETTEXT_CACHE_STATUS,
                         formatSize(current_currCacheBytes) + "/" + maxCacheBytes+"MB");
-                Log.i("User Logged", "Call Sweep2() : " + current_currCacheBytes / (maxCacheBytes * 10000));
+                Log.i(TAG, "Call Sweep2() : " + current_currCacheBytes / (maxCacheBytes * 10000));
                 drawGraph.setmSweep2(current_currCacheBytes / (maxCacheBytes * 10000));
 
             }
-            Log.v("User Logged", "while is null? : " + line);
+            Log.v(TAG, "while is null? : " + line);
 
         } catch(Exception e) {
-            Log.e("User Logged",e.getMessage());
+            Log.e(TAG,e.getMessage());
         } finally {
             try {
                 //원래는 여기에 setUI 내용이 있었음.
                 br.close();
             } catch (Exception e) {
-//						Log.e("User Logged",e.getMessage());
+//						Log.e(TAG,e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -464,7 +472,7 @@ public class MainActivity extends Activity implements OnClickListener {
             //refresh cycle
             Thread.sleep(1000);
         } catch (InterruptedException e) {
-            Log.e("User Logged",e.getMessage());
+            Log.e(TAG,e.getMessage());
             e.printStackTrace();
         }*/
 
@@ -508,8 +516,8 @@ public class MainActivity extends Activity implements OnClickListener {
                 backup_size = resize;
                 dialog.dismiss();
                 if(server_switch) {
-                    Log.i("User Logged", "openAlert() : path " + path);
-                    shell.reconfigureServer(resize, path);
+                    Log.i(TAG, "openAlert() : path " + path);
+                    ExecuteShell.reconfigureServer(resize, path);
                 }
             }
         });
@@ -538,11 +546,14 @@ public class MainActivity extends Activity implements OnClickListener {
             public void onClick(DialogInterface dialog,int id) {
                 //확인 버튼 눌림
                 alert = true;
+                Log.v(TAG, "Yes selected, alert: " + alert);
+
             }
         });
         alertDialogBuilder.setNegativeButton("No",new DialogInterface.OnClickListener() {
 
             public void onClick(DialogInterface dialog,int id) {
+                Log.v(TAG, "No selected, alert: " + alert);
                 // cancel the alert box and put a Toast to the user
                 //취소버튼 눌림.
                 alert = false;

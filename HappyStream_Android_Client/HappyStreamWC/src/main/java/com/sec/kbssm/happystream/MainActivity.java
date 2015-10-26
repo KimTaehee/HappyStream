@@ -424,7 +424,7 @@ public class MainActivity extends Activity implements OnClickListener {
                 sendActionMsg(ACTION_TYPE_SETTEXT_SAVE_RATIO, "" + saveRatio + "%");
                 sendActionMsg(ACTION_TYPE_SETTEXT_SAVE_STATUS,
                         formatSize(current_mHitBytes) + " / " + formatSize(current_mHitBytes + current_mMissBytes));
-                drawGraph.setmSweep(saveRatio);
+                drawGraph.setmSweep((saveRatio>100)?100:saveRatio);
             }
 
             int currCacheBytes = Integer.parseInt(result.substring(0, result.indexOf('\t'))) * 1000;
@@ -445,7 +445,7 @@ public class MainActivity extends Activity implements OnClickListener {
                 sendActionMsg(ACTION_TYPE_SETTEXT_CACHE_STATUS,
                         formatSize(current_currCacheBytes) + "/" + maxCacheBytes+"MB");
                 Log.i(TAG, "Call Sweep2() : " + current_currCacheBytes / (maxCacheBytes * 10000));
-                drawGraph.setmSweep2(current_currCacheBytes / (maxCacheBytes * 10000));
+                drawGraph.setmSweep2((current_currCacheBytes / (maxCacheBytes * 10000))>100?100:current_currCacheBytes / (maxCacheBytes * 10000));
 
             }
             Log.v(TAG, "while is null? : " + line);
@@ -620,6 +620,5 @@ public class MainActivity extends Activity implements OnClickListener {
             }
         }
     }
-
 }
 

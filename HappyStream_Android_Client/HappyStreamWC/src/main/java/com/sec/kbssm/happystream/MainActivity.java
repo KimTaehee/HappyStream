@@ -310,8 +310,8 @@ public class MainActivity extends Activity implements OnClickListener {
         super.onDestroy();
         //SharedPreferences pref = getSharedPreferences("pref", MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
-        Log.v(TAG, "In onDestroy ..put dir_size -> "+ resize);
-        editor.putString("dir_size", ""+resize);
+        Log.v(TAG, "In onDestroy ..put dir_size -> " + resize);
+        editor.putString("dir_size", "" + resize);
         editor.commit();
 
         unregisterReceiver(mReceiver);
@@ -328,6 +328,16 @@ public class MainActivity extends Activity implements OnClickListener {
         mHandler.sendMessage(msg);
 
 
+    }
+
+    private void resetAccesslog() {
+        sendActionMsg(ACTION_TYPE_SETTEXT_SAVE_RATIO, "0%");
+        sendActionMsg(ACTION_TYPE_SETTEXT_SAVE_STATUS, "0MB/0MB");
+        drawGraph.setmSweep(0);
+
+        sendActionMsg(ACTION_TYPE_SETTEXT_CACHE_RATIO, "0%");
+        sendActionMsg(ACTION_TYPE_SETTEXT_CACHE_STATUS, "0MB/0MB");
+        drawGraph.setmSweep2(0);
     }
 
     private void ReadAccesslog() {
@@ -503,18 +513,18 @@ public class MainActivity extends Activity implements OnClickListener {
                 } else { //서버가 꺼져있을땐 불가
                     seekbar.setProgress(backup_size);
                     cache_dir_size.setText(""+backup_size);
-                    Log.e(TAG, "서버가 꺼져있을땐 캐시 비우기 불가!");
-                    Toast.makeText(getApplicationContext(), "서버가 꺼져있을땐 캐시를 비울 수 없습니다. 서버를 끄고 다시 시도하세요.", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "서버가 꺼져있을땐 캐시 용량 변경 불가!");
+                    Toast.makeText(getApplicationContext(), "서버가 꺼져있을땐 캐시 용량 변경을 할 수 없습니다. 서버를 켜고 다시 시도하세요.", Toast.LENGTH_SHORT).show();
                 }
             }
         });
-        alertDialogBuilder.setNegativeButton("No",new DialogInterface.OnClickListener() {
+        alertDialogBuilder.setNegativeButton("No", new DialogInterface.OnClickListener() {
 
-            public void onClick(DialogInterface dialog,int id) {
+            public void onClick(DialogInterface dialog, int id) {
                 // cancel the alert box and put a Toast to the user
                 //취소버튼 눌림.
                 seekbar.setProgress(backup_size);
-                cache_dir_size.setText(""+backup_size);
+                cache_dir_size.setText("" + backup_size);
                 Log.v(TAG, "dialog cancelled");
                 dialog.cancel();
             }
@@ -536,6 +546,7 @@ public class MainActivity extends Activity implements OnClickListener {
                 Log.v(TAG, "Yes selected. clean cache");
                 ExecuteShell.cleanCache(Common.FILES_PATH); //TODO: 결과에 따라 작동하기
                 Toast.makeText(getApplicationContext(), "캐시를 비웠습니다.", Toast.LENGTH_SHORT).show();
+                resetAccesslog();
             }
         });
         alertDialogBuilder.setNegativeButton("No",new DialogInterface.OnClickListener() {

@@ -5,9 +5,11 @@ import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,7 +35,9 @@ import java.util.StringTokenizer;
 
 public class MainActivity extends Activity implements OnClickListener {
     private static final String TAG = MainActivity.class.getSimpleName();
-    
+
+    private MessageReceiver mReceiver = null;
+
     //private RelativeLayout mLayoutOnoff;
     private TextView mTvAccessLog;
     private TextView mTvSaveRatio;
@@ -44,7 +48,7 @@ public class MainActivity extends Activity implements OnClickListener {
     private ImageView onBtn, offBtn, trashBtn, trashBtn_off;
     private SeekBar seekbar;
     //String result;
-    boolean server_switch;
+//    boolean server_switch;
     SharedPreferences pref;
     //	private Scanner mSc = null;
     //private LogMonitoringAsyncTask mLogMonitor;
@@ -63,6 +67,8 @@ public class MainActivity extends Activity implements OnClickListener {
     private static final int ACTION_TYPE_SETTEXT_SAVE_STATUS = 201;
     private static final int ACTION_TYPE_SETTEXT_CACHE_RATIO = 300;
     private static final int ACTION_TYPE_SETTEXT_CACHE_STATUS = 301;
+
+
 
 
     private Handler mHandler = new Handler() {
@@ -113,7 +119,6 @@ public class MainActivity extends Activity implements OnClickListener {
         offBtn.setOnClickListener(this);
         trashBtn = (ImageView) findViewById(R.id.clean_cache);
         trashBtn_off = (ImageView) findViewById(R.id.clean_cache_gray);
-        server_switch = false;
         trashBtn_off.setVisibility(View.INVISIBLE);
         cache_dir_size = (TextView) findViewById(R.id.dir_size_text);
         trashBtn.setOnClickListener(this);
@@ -139,18 +144,20 @@ public class MainActivity extends Activity implements OnClickListener {
         //mLayoutOnoff.setOnClickListener(this);
         //mTvAccessLog = (TextView) findViewById(R.id.main_tv_access_log);
 
+        //server status check
+
         seekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 Log.d(TAG,"seekbar change start : " + i);
                 resize = i+50;
-                cache_dir_size.setText(""+resize);
+                cache_dir_size.setText("" + resize);
+//                ReadAccesslog(); //TODO: is this right?
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
                 Log.d(TAG,"seekbar touch start");
-
             }
 
             @Override
@@ -168,6 +175,8 @@ public class MainActivity extends Activity implements OnClickListener {
         backup_size = cacheDirSize;
         seekbar.setProgress(resize-50);//-50? //TODO: what is it?
         cache_dir_size.setText(String.valueOf(cacheDirSize));
+
+        registerReceiverWithActions();
 
     }
     //checkFileExist
@@ -264,37 +273,38 @@ public class MainActivity extends Activity implements OnClickListener {
         Log.v(TAG, "onClick() invoked.");
         switch(v.getId()){
             case R.id.switch_server_on :
+                SharedPreferences.Editor editor = pref.edit();
+                Log.v(TAG, "switch_server_on");
+                editor.putBoolean(Common.ACTION_USER_WANT_SERVER_ON, true);
+                editor.commit();
+//                if(!Common.isSquidRunning) {
 
-                ExecuteShell.killServer(this.getFilesDir().getPath());
-                onBtn.setVisibility(View.INVISIBLE);
-                offBtn.setVisibility(View.VISIBLE);
-                server_switch = false;
-                trashBtn.setVisibility(View.VISIBLE);
-                trashBtn_off.setVisibility(View.INVISIBLE);
+
+//                }
                 break;
 
             case R.id.switch_server_off :
-
-                ExecuteShell.runServer(this.getFilesDir().getPath());
-                offBtn.setVisibility(View.INVISIBLE);
-                onBtn.setVisibility(View.VISIBLE);
-                server_switch = true;
-                trashBtn.setVisibility(View.INVISIBLE);
-                trashBtn_off.setVisibility(View.VISIBLE);
-
-                notification();
+                editor = pref.edit();
+                Log.v(TAG, "switch_server_on");
+                editor.putBoolean(Common.ACTION_USER_WANT_SERVER_ON, false);
+                editor.commit();
+//                if(Common.isSquidRunning) {
+//                    notification();
+//                }
 
                 break;
 
             case R.id.clean_cache :
-                if(!server_switch) {//서버가 꺼져있을때는 cache를 비울 수 있음.
+                if(!Common.isSquidRunning) {//서버가 꺼져있을때는 cache를 비울 수 있음.
                     //
                     openAlert_CleanCache();
                     if(alert){
-                        ExecuteShell.cleanCache(this.getFilesDir().getPath());
+                        ExecuteShell.cleanCache(this.getFilesDir().getPath()); //TODO: 결과에 따라 작동하기
                         Toast.makeText(getApplicationContext(), "캐쉬를 비웠습니다.", Toast.LENGTH_SHORT).show();
                     }
 
+                } else {
+                    Log.e(TAG, "서버가 켜져있을땐 cache 비우기 불가");
                 }
 
                 break;
@@ -315,8 +325,8 @@ public class MainActivity extends Activity implements OnClickListener {
         editor.putString("dir_size", ""+resize);
         editor.commit();
 
-        if(server_switch)
-            ExecuteShell.killServer(this.getFilesDir().getPath());
+//        if(server_switch)
+//            ExecuteShell.killServer(this.getFilesDir().getPath());
         nm.cancel(100);
     }
 
@@ -499,9 +509,15 @@ public class MainActivity extends Activity implements OnClickListener {
                 //reconfigure
                 backup_size = resize;
                 dialog.dismiss();
-                if(server_switch) {
+                if(Common.isSquidRunning) { //서버 실행중일때만 캐시 용량 변경 가능.
                     Log.i(TAG, "openAlert() : path " + path);
                     ExecuteShell.reconfigureServer(resize, path);
+                    ReadAccesslog();
+                } else { //서버가 꺼져있을땐 불가
+                    seekbar.setProgress(backup_size);
+                    cache_dir_size.setText(""+backup_size);
+                    Log.e(TAG, "서버가 꺼져있을땐 캐시 비우기 불가!");
+                    Toast.makeText(getApplicationContext(), "서버가 꺼져있을땐 캐시를 비울 수 없습니다. 서버를 끄고 다시 시도하세요.", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -512,6 +528,7 @@ public class MainActivity extends Activity implements OnClickListener {
                 //취소버튼 눌림.
                 seekbar.setProgress(backup_size);
                 cache_dir_size.setText(""+backup_size);
+                Log.v(TAG, "dialog cancelled");
                 dialog.cancel();
             }
 
@@ -567,6 +584,41 @@ public class MainActivity extends Activity implements OnClickListener {
         noti.flags |= Notification.FLAG_INSISTENT;
         // 알림 시작
         nm.notify(100, noti);//NOTI_ID
+    }
+
+    private void registerReceiverWithActions() {
+        //register receiver with actions
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Common.ACTION_TO_REFRESH_UI);
+
+        mReceiver = new MessageReceiver();
+        registerReceiver(mReceiver, filter);
+        Log.v(TAG, "registerReceiver()");
+    }
+
+    private class MessageReceiver extends BroadcastReceiver {
+
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.v(TAG, "onReceive invoked!");
+
+            if (intent.getAction().equals(Common.ACTION_TO_REFRESH_UI)) {
+                Log.v(TAG, "ACTION_TO_REFRESH_UI received. Common.isSquidRunning: " + Common.isSquidRunning);
+
+                if(Common.isSquidRunning) {
+                    onBtn.setVisibility(View.INVISIBLE);
+                    offBtn.setVisibility(View.VISIBLE);
+                    trashBtn.setVisibility(View.VISIBLE);
+                    trashBtn_off.setVisibility(View.INVISIBLE);
+                } else {
+                    offBtn.setVisibility(View.INVISIBLE);
+                    onBtn.setVisibility(View.VISIBLE);
+                    trashBtn.setVisibility(View.INVISIBLE);
+                    trashBtn_off.setVisibility(View.VISIBLE);
+                }
+            }
+        }
     }
 
 }

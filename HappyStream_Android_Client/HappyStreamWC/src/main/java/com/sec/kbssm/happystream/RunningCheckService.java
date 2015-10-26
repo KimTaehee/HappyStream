@@ -2,6 +2,7 @@ package com.sec.kbssm.happystream;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -11,7 +12,10 @@ import java.io.InputStreamReader;
 
 public class RunningCheckService extends Service {
     private static final String TAG = RunningCheckService.class.getSimpleName();
-    private static final int CHECK_DELAY_MS = 5000;
+    private static final int CHECK_DELAY_MS = 3000;
+
+
+    SharedPreferences pref;
 
     private Handler mHandler;
     private Runnable mRunnable;
@@ -24,7 +28,7 @@ public class RunningCheckService extends Service {
      * @return
      */
     public static boolean checkRunningServer() {
-        Log.v(TAG, "run() invoked!");
+        //Log.v(TAG, "run() invoked!");
         //check ps squid
         try {
             String result = serviceRun("ps squid");
@@ -48,6 +52,19 @@ public class RunningCheckService extends Service {
             public void run() {
                 Common.isSquidRunning = checkRunningServer();
                 Log.i(TAG, "isSquidRunning: " + Common.isSquidRunning);
+                Intent intent = new Intent(Common.ACTION_TO_REFRESH_UI);
+                sendBroadcast(intent);
+
+                pref = getSharedPreferences("pref", MODE_PRIVATE);
+                if(pref.getBoolean(Common.ACTION_USER_WANT_SERVER_ON, false) == true && !Common.isSquidRunning) { //꺼졌는데 사용자가 이걸 켜두길 원하면
+                    Log.i(TAG, "attempt to restart squid");
+                    ExecuteShell.runServer(Common.FILES_PATH); //TODO: 정상동작하는지 확인하라!
+                } else if(pref.getBoolean(Common.ACTION_USER_WANT_SERVER_ON, false) == false && Common.isSquidRunning) { //사용자는 끄려고 했는데 서버가 켜져있는 경우
+                    Log.i(TAG, "attempt to kill squid");
+                    ExecuteShell.killServer(Common.FILES_PATH); //TODO: 정상동작하는지 확인하라!
+                };
+
+
                 mHandler.postDelayed(mRunnable, CHECK_DELAY_MS);
             }
         };
@@ -87,7 +104,7 @@ public class RunningCheckService extends Service {
         char[] buffer = new char[4096];
         StringBuffer output = new StringBuffer();
         while ((read = reader.read(buffer)) > 0) {
-            Log.i(TAG, "output: " + new String(buffer));
+            //Log.i(TAG, "output: " + new String(buffer));
             output.append(buffer, 0, read);
         }
         reader.close();

@@ -1,5 +1,8 @@
 package com.sec.kbssm.happystream;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,6 +17,7 @@ public class RunningCheckService extends Service {
     private static final String TAG = RunningCheckService.class.getSimpleName();
     private static final int CHECK_DELAY_MS = 3000;
 
+    private NotificationManager nm = null;
 
     SharedPreferences pref;
 
@@ -47,21 +51,32 @@ public class RunningCheckService extends Service {
     public void onCreate() {
         Log.i(TAG, "onCreate() invoked");
 
+        nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+
         mRunnable = new Runnable() {
             @Override
             public void run() {
                 Common.isSquidRunning = checkRunningServer();
                 Log.i(TAG, "isSquidRunning: " + Common.isSquidRunning);
-                Intent intent = new Intent(Common.ACTION_TO_REFRESH_UI);
-                sendBroadcast(intent);
+                Intent buttonRefreshIntent = new Intent(Common.ACTION_TO_REFRESH_BUTTON);
+                sendBroadcast(buttonRefreshIntent);
+
+                if(Common.isSquidRunning) {
+                    showNotification();
+                } else {
+                    closeNotification();
+                }
 
                 pref = getSharedPreferences("pref", MODE_PRIVATE);
                 if(pref.getBoolean(Common.ACTION_USER_WANT_SERVER_ON, false) == true && !Common.isSquidRunning) { //꺼졌는데 사용자가 이걸 켜두길 원하면
                     Log.i(TAG, "attempt to restart squid");
                     ExecuteShell.runServer(Common.FILES_PATH); //TODO: 정상동작하는지 확인하라!
+                    Intent graphRefrestIntent = new Intent(Common.ACTION_TO_REFRESH_GRAPH);
+                    sendBroadcast(graphRefrestIntent);
                 } else if(pref.getBoolean(Common.ACTION_USER_WANT_SERVER_ON, false) == false && Common.isSquidRunning) { //사용자는 끄려고 했는데 서버가 켜져있는 경우
                     Log.i(TAG, "attempt to kill squid");
                     ExecuteShell.killServer(Common.FILES_PATH); //TODO: 정상동작하는지 확인하라!
+
                 };
 
 
@@ -73,6 +88,34 @@ public class RunningCheckService extends Service {
 
 
         super.onCreate();
+    }
+
+    private void closeNotification() {
+        Log.v(TAG, "closeNotification");
+        nm.cancel(Common.NOTIFICATION_ID);
+    }
+
+    private void showNotification() {
+        Log.v(TAG, "showNotification");
+        Intent intent = new Intent(this, MainActivity.class);
+        PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
+
+        Notification noti = new Notification.Builder(this)
+                .setSmallIcon(R.drawable.ic_launcher)
+                        //.setTicker("New Message2")
+                .setContentTitle("HappyStream 가동중")
+                        //.setContentText("Other Activity")
+                .setWhen(System.currentTimeMillis())
+                .setContentIntent(pIntent)
+                .setVibrate(new long[]{100L, 100L})
+                .setOngoing(true) //this make non-removable
+                .build();
+        // 알림 방식 지정
+        noti.defaults |= Notification.DEFAULT_ALL;
+        noti.flags |= Notification.FLAG_INSISTENT;
+        noti.flags |= Notification.FLAG_ONLY_ALERT_ONCE;
+        // 알림 시작
+        nm.notify(Common.NOTIFICATION_ID, noti);//NOTI_ID
     }
 
     @Override

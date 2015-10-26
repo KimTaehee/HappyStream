@@ -54,10 +54,7 @@ public class MainActivity extends Activity implements OnClickListener {
     //private LogMonitoringAsyncTask mLogMonitor;
     DrawGraph drawGraph;
 
-    private NotificationManager nm = null;
-
     private int backup_size, resize;
-    boolean alert;
     String path="";
 
     private static final String ACTION_KEY_TYPE = "action";
@@ -124,8 +121,6 @@ public class MainActivity extends Activity implements OnClickListener {
         trashBtn.setOnClickListener(this);
         trashBtn_off.setOnClickListener(this);
         cache_dir_size.setOnClickListener(this);
-
-        nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
         mTvSaveRatio = (TextView) findViewById(R.id.main_tv_save_ratio);
         mTvSaveStatus = (TextView) findViewById(R.id.main_tv_save_status);
@@ -288,9 +283,6 @@ public class MainActivity extends Activity implements OnClickListener {
                 Log.v(TAG, "switch_server_on");
                 editor.putBoolean(Common.ACTION_USER_WANT_SERVER_ON, false);
                 editor.commit();
-//                if(Common.isSquidRunning) {
-//                    notification();
-//                }
 
                 break;
 
@@ -298,19 +290,16 @@ public class MainActivity extends Activity implements OnClickListener {
                 if(!Common.isSquidRunning) {//서버가 꺼져있을때는 cache를 비울 수 있음.
                     //
                     openAlert_CleanCache();
-                    if(alert){
-                        ExecuteShell.cleanCache(this.getFilesDir().getPath()); //TODO: 결과에 따라 작동하기
-                        Toast.makeText(getApplicationContext(), "캐쉬를 비웠습니다.", Toast.LENGTH_SHORT).show();
-                    }
+
 
                 } else {
-                    Log.e(TAG, "서버가 켜져있을땐 cache 비우기 불가");
+                    Log.e(TAG, "서버가 켜져있을땐 캐시 비우기 불가");
                 }
 
                 break;
             case R.id.clean_cache_gray :
                 Log.v(TAG, "onClick() : cache_gray btn Pressed");
-                Toast.makeText(getApplicationContext(), "서버가 켜져 있는 동안은 캐쉬를 지울 수 없습니다.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "서버가 켜져 있는 동안은 캐시를 지울 수 없습니다.", Toast.LENGTH_SHORT).show();
                 break;
         }
         //startActivity(new Intent(this, ManualOperationActivity.class));
@@ -325,9 +314,7 @@ public class MainActivity extends Activity implements OnClickListener {
         editor.putString("dir_size", ""+resize);
         editor.commit();
 
-//        if(server_switch)
-//            ExecuteShell.killServer(this.getFilesDir().getPath());
-        nm.cancel(100);
+        unregisterReceiver(mReceiver);
     }
 
     private void sendActionMsg(int action, String value) {
@@ -540,24 +527,23 @@ public class MainActivity extends Activity implements OnClickListener {
     private void openAlert_CleanCache(){
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
         alertDialogBuilder.setTitle(this.getTitle());
-        alertDialogBuilder.setMessage("캐쉬를 지울까요?");
+        alertDialogBuilder.setMessage("캐시를 지울까요?");
         // set positive button: Yes message
 
         alertDialogBuilder.setPositiveButton("Yes",new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog,int id) {
                 //확인 버튼 눌림
-                alert = true;
-                Log.v(TAG, "Yes selected, alert: " + alert);
-
+                Log.v(TAG, "Yes selected. clean cache");
+                ExecuteShell.cleanCache(Common.FILES_PATH); //TODO: 결과에 따라 작동하기
+                Toast.makeText(getApplicationContext(), "캐시를 비웠습니다.", Toast.LENGTH_SHORT).show();
             }
         });
         alertDialogBuilder.setNegativeButton("No",new DialogInterface.OnClickListener() {
 
             public void onClick(DialogInterface dialog,int id) {
-                Log.v(TAG, "No selected, alert: " + alert);
+                Log.v(TAG, "No selected.");
                 // cancel the alert box and put a Toast to the user
                 //취소버튼 눌림.
-                alert = false;
                 dialog.cancel();
             }
 
@@ -566,30 +552,11 @@ public class MainActivity extends Activity implements OnClickListener {
         alertDialog.show();
     }
 
-    private void notification() {
-
-        Intent intent = new Intent(this, MainActivity.class);
-        PendingIntent pIntent = PendingIntent.getActivity(MainActivity.this, 0, intent, 0);
-
-        Notification noti = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.ic_launcher)
-                        //.setTicker("New Message2")
-                .setContentTitle("HappyStream 가동중")
-                        //.setContentText("Other Activity")
-                .setWhen(System.currentTimeMillis())
-                .setContentIntent(pIntent)
-                .build();
-        // 알림 방식 지정
-        noti.defaults |= Notification.DEFAULT_ALL;
-        noti.flags |= Notification.FLAG_INSISTENT;
-        // 알림 시작
-        nm.notify(100, noti);//NOTI_ID
-    }
-
     private void registerReceiverWithActions() {
         //register receiver with actions
         IntentFilter filter = new IntentFilter();
-        filter.addAction(Common.ACTION_TO_REFRESH_UI);
+        filter.addAction(Common.ACTION_TO_REFRESH_BUTTON);
+        filter.addAction(Common.ACTION_TO_REFRESH_GRAPH);
 
         mReceiver = new MessageReceiver();
         registerReceiver(mReceiver, filter);
@@ -603,21 +570,26 @@ public class MainActivity extends Activity implements OnClickListener {
         public void onReceive(Context context, Intent intent) {
             Log.v(TAG, "onReceive invoked!");
 
-            if (intent.getAction().equals(Common.ACTION_TO_REFRESH_UI)) {
-                Log.v(TAG, "ACTION_TO_REFRESH_UI received. Common.isSquidRunning: " + Common.isSquidRunning);
+            if (intent.getAction().equals(Common.ACTION_TO_REFRESH_BUTTON)) {
+                Log.v(TAG, "ACTION_TO_REFRESH_BUTTON received. Common.isSquidRunning: " + Common.isSquidRunning);
 
                 if(Common.isSquidRunning) {
                     onBtn.setVisibility(View.INVISIBLE);
                     offBtn.setVisibility(View.VISIBLE);
-                    trashBtn.setVisibility(View.VISIBLE);
-                    trashBtn_off.setVisibility(View.INVISIBLE);
+                    trashBtn.setVisibility(View.INVISIBLE);
+                    trashBtn_off.setVisibility(View.VISIBLE);
+
                 } else {
                     offBtn.setVisibility(View.INVISIBLE);
                     onBtn.setVisibility(View.VISIBLE);
-                    trashBtn.setVisibility(View.INVISIBLE);
-                    trashBtn_off.setVisibility(View.VISIBLE);
+                    trashBtn.setVisibility(View.VISIBLE);
+                    trashBtn_off.setVisibility(View.INVISIBLE);
                 }
+            } else if (intent.getAction().equals(Common.ACTION_TO_REFRESH_GRAPH)) {
+                Log.v(TAG, "ACTION_TO_REFRESH_GRAPH");
+                ReadAccesslog();
             }
+
         }
     }
 }

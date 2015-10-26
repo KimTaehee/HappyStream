@@ -128,26 +128,6 @@ public class MainActivity extends Activity implements OnClickListener {
         mTvCacheStatus = (TextView) findViewById(R.id.main_tv_cache_status);
 
         pref = getSharedPreferences("pref", MODE_PRIVATE);
-        SharedPreferences.Editor editor = pref.edit();
-
-        if(pref.getString("file", "").equals("on")){
-
-            Log.d(TAG,"dir_size : " + pref.getString("dir_size", ""));
-            seekbar.setProgress(Integer.parseInt(pref.getString("dir_size", ""))-50);//-50?
-            cache_dir_size.setText(pref.getString("dir_size", ""));
-            backup_size = Integer.parseInt(pref.getString("dir_size", ""));
-
-        }else{
-            //없는 거기 때문에 conf 파일에서 내용을 읽어와야함... 근데 이건 내가 알고 있는 값이니까 값을 줘도 될 것 같아.
-            Log.d(TAG,"dir_size input : " + 500);
-            resize = 500;
-            backup_size = 500;
-            editor.putString("dir_size", "500");
-            editor.commit();
-            seekbar.setProgress(resize-50);//-50?
-            cache_dir_size.setText("500");
-
-        }
 
         //call service
         Common.isSquidRunning = false;
@@ -180,7 +160,14 @@ public class MainActivity extends Activity implements OnClickListener {
             }
         });
         path = this.getFilesDir().getPath();
+
         checkFileExist();
+
+        int cacheDirSize = ExecuteShell.getCacheDirSize(this.getFilesDir().getPath());
+        resize = cacheDirSize;
+        backup_size = cacheDirSize;
+        seekbar.setProgress(resize-50);//-50? //TODO: what is it?
+        cache_dir_size.setText(String.valueOf(cacheDirSize));
 
     }
     //checkFileExist
@@ -205,6 +192,7 @@ public class MainActivity extends Activity implements OnClickListener {
             copyFile("killserver.sh", this.getFilesDir().getPath() + "/killserver.sh", this);
             copyFile("cleancache.sh", this.getFilesDir().getPath() + "/cleancache.sh", this);
             copyFile("pssquid.sh", this.getFilesDir().getPath() + "/pssquid.sh", this);
+            copyFile("grepcachedir.sh", this.getFilesDir().getPath() + "/grepcachedir.sh", this);
             try {
                 Log.i(TAG, ExecuteShell.run("chmod -R 775 " + this.getFilesDir().getPath()));
 

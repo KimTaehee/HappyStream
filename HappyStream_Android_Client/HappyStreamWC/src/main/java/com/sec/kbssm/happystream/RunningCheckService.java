@@ -29,10 +29,8 @@ public class RunningCheckService extends Service {
         try {
             String result = serviceRun("ps squid");
             if(result.contains("squid")) {
-                Log.i(TAG, "Squid Found!");
                 return true;
             } else {
-                Log.i(TAG, "Squid NOT FOUND!");
                 return false;
             }
         } catch (Exception e) {
@@ -48,7 +46,8 @@ public class RunningCheckService extends Service {
         mRunnable = new Runnable() {
             @Override
             public void run() {
-                checkRunningServer();
+                Common.isSquidRunning = checkRunningServer();
+                Log.i(TAG, "isSquidRunning: " + Common.isSquidRunning);
                 mHandler.postDelayed(mRunnable, CHECK_DELAY_MS);
             }
         };

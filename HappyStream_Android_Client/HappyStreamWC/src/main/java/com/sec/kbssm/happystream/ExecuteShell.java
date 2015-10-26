@@ -97,10 +97,44 @@ public class ExecuteShell { //TODO: activity ...?
         return result;
     }
 
+    /**
+     *
+     * @param path
+     * @return MB in squid.conf
+     */
+    public static int getCacheDirSize(String path){
+        String result = null;
+        Log.v(TAG, "getCacheDirSize() called");
+        try{
+            result = run("sh " + path + "/grepcachedir.sh");
+            Log.i(TAG, result);
+
+        }catch(Exception e){
+            Log.e(TAG, e.getMessage());
+            e.printStackTrace();
+        }
+
+        String[] args = result.split("\\s+");
+
+        int indexAt = -1;
+        for(int i = 0; i< args.length; ++i) {
+            Log.v(TAG, args[i]);
+            if(args[i].equals("/data/data/com.sec.kbssm.happystream/files/var/logs/cache")) {
+                indexAt = i;
+                break;
+            }
+        }
+
+        int cacheDirSize = Integer.parseInt(args[indexAt+1]);
+
+        Log.v(TAG, "getCacheDirSize() end. cacheDirSize: " + cacheDirSize);
+
+        return cacheDirSize;
+    }
+
     public static String run(String path) throws Exception {
         Process nativeApp = Runtime.getRuntime().exec(path);
         Log.d(TAG, "exec(" + path + ")");
-
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(nativeApp.getInputStream()));
         int read;
@@ -110,6 +144,7 @@ public class ExecuteShell { //TODO: activity ...?
             Log.i(TAG, "output: " + new String(buffer));
             output.append(buffer, 0, read);
         }
+
         reader.close();
 
         // Waits for the command to finish.
@@ -122,7 +157,6 @@ public class ExecuteShell { //TODO: activity ...?
 
     private static class RunAsyncTask extends AsyncTask<String, Void, String> {
         private String result;
-
 
         @Override
         protected void onPreExecute() {
